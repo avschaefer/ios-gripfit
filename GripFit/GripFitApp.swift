@@ -3,7 +3,7 @@ import SwiftData
 import FirebaseCore
 
 @main
-struct GripTrackApp: App {
+struct GripFitApp: App {
     @State private var authVM = AuthViewModel()
     @State private var deviceManager: MockBLEManager
 
@@ -31,4 +31,3 @@ struct GripTrackApp: App {
         .modelContainer(for: GripRecording.self)
     }
 }
-

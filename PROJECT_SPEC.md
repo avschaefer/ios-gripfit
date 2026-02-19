@@ -1,12 +1,12 @@
-# GripTrack — iOS Project Spec for Cursor Implementation
+# GripFit — iOS Project Spec for Cursor Implementation
 
-> **Purpose:** This document is the single source of truth for Cursor AI to implement the GripTrack iOS app. Reference this file in every Cursor agent session. Place it at the project root as `PROJECT_SPEC.md` and reference it from your `.cursor/rules/` files.
+> **Purpose:** This document is the single source of truth for Cursor AI to implement the GripFit iOS app. Reference this file in every Cursor agent session. Place it at the project root as `PROJECT_SPEC.md` and reference it from your `.cursor/rules/` files.
 
 ---
 
 ## 1. Product Definition
 
-**GripTrack** is an iOS app that connects to a Bluetooth Low Energy (BLE) grip strength dynamometer, displays real-time force data, records grip sessions, and persists all data to a user account.
+**GripFit** is an iOS app that connects to a Bluetooth Low Energy (BLE) grip strength dynamometer, displays real-time force data, records grip sessions, and persists all data to a user account.
 
 ### MVP Scope — What to Build
 
@@ -62,8 +62,8 @@ swift-charts              — (built-in with iOS 17, no external package needed)
 Create this exact folder and file structure. Every file listed below must exist. Files marked `[stub]` should be created with minimal placeholder code that compiles.
 
 ```
-GripTrack/
-├── GripTrackApp.swift                    # @main App entry point
+GripFit/
+├── GripFitApp.swift                    # @main App entry point
 ├── ContentView.swift                     # Root view: auth gate → TabView
 │
 ├── Models/
@@ -442,7 +442,7 @@ Follow this exact sequence. Each step should compile and run before moving to th
 3. Create the full folder structure from Section 3
 4. Add Firebase SDK via SPM (`FirebaseAuth`, `FirebaseFirestore`)
 5. Configure `GoogleService-Info.plist` (from Firebase console)
-6. Initialize Firebase in `GripTrackApp.swift`
+6. Initialize Firebase in `GripFitApp.swift`
 7. Add Info.plist entries for Bluetooth
 8. **Verify:** App compiles and launches to a blank screen
 
@@ -533,10 +533,10 @@ description: Core project rules applied to all files
 alwaysApply: true
 ---
 
-# GripTrack iOS Project Rules
+# GripFit iOS Project Rules
 
 ## Project Context
-You are building GripTrack, an iOS app for BLE grip strength measurement.
+You are building GripFit, an iOS app for BLE grip strength measurement.
 Always reference PROJECT_SPEC.md for architectural decisions and implementation details.
 
 ## Tech Stack (do not deviate)
@@ -698,9 +698,9 @@ alwaysApply: false
 
 Run through this before writing any feature code:
 
-- [ ] Xcode project created: "GripTrack", iOS App, SwiftUI lifecycle, Swift, SwiftData
+- [ ] Xcode project created: "GripFit", iOS App, SwiftUI lifecycle, Swift, SwiftData
 - [ ] Deployment target set to iOS 17.0
-- [ ] Bundle identifier set (e.g., com.yourname.griptrack)
+- [ ] Bundle identifier set (e.g., com.yourname.GripFit)
 - [ ] Firebase project created at console.firebase.google.com
 - [ ] Firebase iOS app registered with bundle ID
 - [ ] `GoogleService-Info.plist` downloaded and added to project

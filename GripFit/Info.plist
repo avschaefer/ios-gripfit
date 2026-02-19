@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>GripTrack needs Bluetooth to connect to your grip strength dynamometer and read force measurements in real-time.</string>
+    <string>GripFit needs Bluetooth to connect to your grip strength dynamometer and read force measurements in real-time.</string>
     <key>UIBackgroundModes</key>
     <array>
         <string>bluetooth-central</string>
@@ -11,11 +11,22 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>GripTrack</string>
+    <string>GripFit</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.552264619254-inbcsel3i9r5u0kpegjnh2f88266osm4</string>
+            </array>
+        </dict>
+    </array>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

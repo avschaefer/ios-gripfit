@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import Observation
 import FirebaseAuth
 
@@ -54,6 +55,20 @@ final class AuthViewModel {
 
         do {
             try await authService.signIn(email: email, password: password)
+        } catch {
+            showErrorMessage(error.localizedDescription)
+        }
+
+        isLoading = false
+    }
+
+    func signInWithGoogle(presenting viewController: UIViewController) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let userId = try await authService.signInWithGoogle(presenting: viewController)
+            try await ensureUserProfileExists(userId: userId)
         } catch {
             showErrorMessage(error.localizedDescription)
         }
@@ -140,6 +155,19 @@ final class AuthViewModel {
     private func showErrorMessage(_ message: String) {
         errorMessage = message
         showError = true
+    }
+
+    private func ensureUserProfileExists(userId: String) async throws {
+        if try await databaseService.fetchUserProfile(userId: userId) != nil {
+            return
+        }
+
+        let profile = UserProfile(
+            userId: userId,
+            displayName: currentUserDisplayName ?? "User",
+            email: currentUserEmail ?? ""
+        )
+        try await databaseService.createUserProfile(profile)
     }
 
     func clearError() {

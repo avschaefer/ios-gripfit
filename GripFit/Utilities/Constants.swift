@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppConstants {
-    static let appName = "GripTrack"
+    static let appName = "GripFit"
     static let minimumPasswordLength = 8
 
     enum Tabs {

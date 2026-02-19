@@ -22,6 +22,12 @@ struct LoginView: View {
                     // Sign In Button
                     signInButton
 
+                    Text("or")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    googleSignInButton
+
                     // Links
                     linksSection
                 }
@@ -124,6 +130,20 @@ struct LoginView: View {
         .disabled(email.isEmpty || password.isEmpty || authVM.isLoading)
     }
 
+    private var googleSignInButton: some View {
+        Button(action: signInWithGoogle) {
+            HStack(spacing: 10) {
+                Image(systemName: "globe")
+                Text("Continue with Google")
+                    .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+        }
+        .buttonStyle(.bordered)
+        .disabled(authVM.isLoading)
+    }
+
     private var linksSection: some View {
         VStack(spacing: 16) {
             Button("Forgot Password?") {
@@ -150,6 +170,27 @@ struct LoginView: View {
         Task {
             await authVM.signIn(email: email, password: password)
         }
+    }
+
+    private func signInWithGoogle() {
+        guard let rootViewController = currentRootViewController() else {
+            authVM.errorMessage = "Unable to present Google Sign-In."
+            authVM.showError = true
+            return
+        }
+
+        Task {
+            await authVM.signInWithGoogle(presenting: rootViewController)
+        }
+    }
+
+    private func currentRootViewController() -> UIViewController? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?
+            .windows
+            .first { $0.isKeyWindow }?
+            .rootViewController
     }
 }
 

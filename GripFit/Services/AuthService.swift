@@ -1,5 +1,8 @@
 import Foundation
+import UIKit
+import FirebaseCore
 import FirebaseAuth
+import GoogleSignIn
 
 enum AuthError: LocalizedError {
     case invalidEmail
@@ -8,6 +11,8 @@ enum AuthError: LocalizedError {
     case weakPassword
     case userNotFound
     case networkError
+    case missingGoogleClientID
+    case missingIDToken
     case unknown(String)
 
     var errorDescription: String? {
@@ -24,6 +29,10 @@ enum AuthError: LocalizedError {
             return "No account found with this email."
         case .networkError:
             return "Network error. Please check your connection."
+        case .missingGoogleClientID:
+            return "Google Sign-In is not configured correctly for this app."
+        case .missingIDToken:
+            return "Google Sign-In could not retrieve an identity token."
         case .unknown(let message):
             return message
         }
@@ -95,8 +104,38 @@ final class AuthService {
         }
     }
 
+    func signInWithGoogle(presenting viewController: UIViewController) async throws -> String {
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            throw AuthError.missingGoogleClientID
+        }
+
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+
+        let result: GIDSignInResult
+        do {
+            result = try await GIDSignIn.sharedInstance.signIn(withPresenting: viewController)
+        } catch {
+            throw AuthError.unknown("Google Sign-In was cancelled or failed.")
+        }
+
+        guard let idToken = result.user.idToken?.tokenString else {
+            throw AuthError.missingIDToken
+        }
+
+        let accessToken = result.user.accessToken.tokenString
+        let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
+
+        do {
+            let authResult = try await Auth.auth().signIn(with: credential)
+            return authResult.user.uid
+        } catch {
+            throw AuthError.from(error)
+        }
+    }
+
     func signOut() throws {
         do {
+            GIDSignIn.sharedInstance.signOut()
             try Auth.auth().signOut()
         } catch {
             throw AuthError.unknown("Failed to sign out: \(error.localizedDescription)")
