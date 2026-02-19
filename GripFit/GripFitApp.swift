@@ -4,11 +4,12 @@ import FirebaseCore
 
 @main
 struct GripFitApp: App {
-    @State private var authVM = AuthViewModel()
+    @State private var authVM: AuthViewModel
     @State private var deviceManager: MockBLEManager
 
     init() {
         FirebaseApp.configure()
+        _authVM = State(initialValue: AuthViewModel())
 
         // Use MockBLEManager for simulator, BLEManager for real device
         #if targetEnvironment(simulator)
@@ -27,6 +28,7 @@ struct GripFitApp: App {
         WindowGroup {
             ContentView(deviceManager: deviceManager)
                 .environment(authVM)
+                .preferredColorScheme(.dark)
         }
         .modelContainer(for: GripRecording.self)
     }

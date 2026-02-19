@@ -27,7 +27,7 @@ enum DatabaseError: LocalizedError {
 @MainActor
 final class DatabaseService {
     static let shared = DatabaseService()
-    private let db = Firestore.firestore()
+    private lazy var db = Firestore.firestore()
 
     private init() {}
 

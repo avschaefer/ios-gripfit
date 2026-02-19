@@ -11,16 +11,23 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if dashboardVM.isLoading && dashboardVM.recordings.isEmpty {
-                    loadingView
-                } else if dashboardVM.hasRecordings {
-                    contentView
-                } else {
-                    emptyStateView
+            ZStack {
+                ModernScreenBackground()
+
+                Group {
+                    if dashboardVM.isLoading && dashboardVM.recordings.isEmpty {
+                        loadingView
+                    } else if dashboardVM.hasRecordings {
+                        contentView
+                    } else {
+                        emptyStateView
+                    }
                 }
+                .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+                .padding(.top, 10)
             }
             .navigationTitle(AppConstants.Tabs.dashboard)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(item: $selectedRecording) { recording in
                 RecordingDetailView(recording: recording)
             }
@@ -45,70 +52,74 @@ struct DashboardView: View {
     // MARK: - Content
 
     private var contentView: some View {
-        List {
-            // Stats Summary
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppConstants.UI.sectionSpacing) {
                 statsSection
-            }
-            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
 
-            // Recent Recordings
-            Section {
-                ForEach(dashboardVM.recordings, id: \.id) { recording in
-                    RecordingRowView(recording: recording, unit: unit)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            selectedRecording = recording
-                        }
-                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                }
-                .onDelete { indexSet in
-                    Task {
-                        for index in indexSet {
-                            await dashboardVM.deleteRecording(dashboardVM.recordings[index])
-                        }
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Recent Sessions")
+                            .font(.headline)
+                        Spacer()
+                        Text("\(dashboardVM.totalSessions)")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    ForEach(dashboardVM.recordings, id: \.id) { recording in
+                        RecordingRowView(recording: recording, unit: unit)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedRecording = recording
+                            }
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    Task {
+                                        await dashboardVM.deleteRecording(recording)
+                                    }
+                                } label: {
+                                    Label("Delete", systemImage: AppConstants.Icons.trash)
+                                }
+                            }
                     }
                 }
-            } header: {
-                Text("Recent Recordings")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .textCase(nil)
             }
+            .padding(.bottom, 20)
         }
-        .listStyle(.plain)
     }
 
     private var statsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Summary")
-                .font(.headline)
+        ModernCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("Today's Best")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    ModernPillBadge(
+                        text: dashboardVM.maxGripForce > 0 ? "+\(Int(dashboardVM.maxGripForce))" : "No Data",
+                        tone: dashboardVM.maxGripForce > 0 ? .positive : .neutral
+                    )
+                }
 
-            HStack(spacing: 12) {
-                StatCardView(
-                    title: "Max Grip",
-                    value: unit.format(dashboardVM.maxGripForce),
-                    icon: AppConstants.Icons.flame,
-                    color: .orange
-                )
+                Text(unit.format(dashboardVM.maxGripForce))
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    .contentTransition(.numericText())
 
-                StatCardView(
-                    title: "Average",
-                    value: unit.format(dashboardVM.averageGripForce),
-                    icon: AppConstants.Icons.chartBar,
-                    color: .blue
-                )
-
-                StatCardView(
-                    title: "Sessions",
-                    value: "\(dashboardVM.totalSessions)",
-                    icon: "number",
-                    color: .green
-                )
+                VStack(spacing: 10) {
+                    StatCardView(
+                        title: "Average",
+                        value: unit.format(dashboardVM.averageGripForce),
+                        icon: AppConstants.Icons.chartBar,
+                        color: .blue
+                    )
+                    StatCardView(
+                        title: "Sessions",
+                        value: "\(dashboardVM.totalSessions)",
+                        icon: "number",
+                        color: .green
+                    )
+                }
             }
         }
     }
@@ -116,39 +127,40 @@ struct DashboardView: View {
     // MARK: - States
 
     private var loadingView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             ProgressView()
-                .scaleEffect(1.5)
-            Text("Loading recordings...")
-                .foregroundStyle(.secondary)
+                .scaleEffect(1.25)
+                .tint(.blue)
+            Text("Loading sessions...")
+                .font(.headline)
+                .foregroundStyle(.primary)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "waveform.path.ecg")
-                .font(.system(size: 60))
-                .foregroundStyle(.secondary)
-
-            Text("No Recordings Yet")
-                .font(.title2)
-                .fontWeight(.bold)
-
-            Text("Connect to a device and start your first grip test to see your results here.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-
-            Image(systemName: "arrow.right.circle.fill")
-                .font(.title)
-                .foregroundStyle(.blue)
-
-            Text("Go to the Device tab to get started")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        VStack {
+            Spacer()
+            ModernCard {
+                VStack(spacing: 14) {
+                    Image(systemName: "waveform.path.ecg")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.blue)
+                    Text("No Recordings Yet")
+                        .font(.title3.weight(.bold))
+                    Text("Connect to a device and run your first grip test to populate this dashboard.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Text("Go to Device tab to get started")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            Spacer()
         }
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

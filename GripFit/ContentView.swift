@@ -38,6 +38,9 @@ struct MainTabView: View {
                     Label(AppConstants.Tabs.settings, systemImage: AppConstants.Icons.settings)
                 }
         }
+        .tint(.white)
+        .toolbarBackground(.visible, for: .tabBar)
+        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
     }
 }
 

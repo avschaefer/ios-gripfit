@@ -9,34 +9,66 @@ struct LiveReadingView: View {
     }
 
     var body: some View {
-        VStack(spacing: 24) {
-            // Hand Selector
-            handSelector
+        ZStack {
+            ModernScreenBackground()
 
-            // Force Display
-            forceDisplay
+            ScrollView {
+                VStack(alignment: .leading, spacing: AppConstants.UI.sectionSpacing) {
+                    header
 
-            // Recording Timer
-            if deviceVM.isRecording {
-                recordingTimer
-            }
+                    ModernCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("ACTIVE HAND")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                    Text("\(deviceVM.selectedHand.displayName) Hand")
+                                        .font(.title3.weight(.bold))
+                                }
+                                Spacer()
+                                handSwitchButton
+                            }
 
-            Spacer()
+                            forceDisplay
 
-            // Record Button
-            recordButton
+                            HStack(spacing: 10) {
+                                ModernCard(compact: true) {
+                                    metric(title: "PEAK", value: peakText, unitLabel: unit.abbreviation)
+                                }
+                                ModernCard(compact: true) {
+                                    metric(
+                                        title: "TIMER",
+                                        value: DateFormatters.durationString(deviceVM.recordingDuration),
+                                        unitLabel: "sec"
+                                    )
+                                }
+                            }
 
-            // Back / Done
-            if !deviceVM.isRecording {
-                Button("Done") {
-                    dismiss()
+                            Text("Squeeze hard. Hold steady.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    recordButton
+
+                    if !deviceVM.isRecording {
+                        Button("Done") {
+                            dismiss()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .foregroundStyle(.secondary)
+                    }
                 }
-                .padding(.bottom, 8)
+                .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+                .padding(.top, 10)
+                .padding(.bottom, 24)
             }
         }
-        .padding()
-        .navigationTitle("Live Reading")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("")
+        .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(deviceVM.isRecording)
         .alert("Recording Saved!", isPresented: $deviceVM.showRecordingSaved) {
             Button("View Dashboard") {
@@ -57,81 +89,80 @@ struct LiveReadingView: View {
 
     // MARK: - Subviews
 
-    private var handSelector: some View {
-        Picker("Hand", selection: $deviceVM.selectedHand) {
-            ForEach(Hand.allCases, id: \.self) { hand in
-                Text(hand.displayName).tag(hand)
+    private var header: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Grip Test")
+                    .font(.title.weight(.bold))
+                Text("Grip strength insights")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
+            Spacer()
+            ModernPillBadge(
+                text: "Live",
+                tone: .positive
+            )
         }
-        .pickerStyle(.segmented)
+    }
+
+    private var handSwitchButton: some View {
+        Button {
+            deviceVM.selectedHand = deviceVM.selectedHand == .left ? .right : .left
+        } label: {
+            Text("Switch")
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(.white.opacity(0.09), in: Capsule())
+        }
+        .buttonStyle(.plain)
         .disabled(deviceVM.isRecording)
     }
 
     private var forceDisplay: some View {
-        VStack(spacing: 8) {
-            // Force gauge circle
-            ZStack {
-                // Background circle
-                Circle()
-                    .stroke(Color.blue.opacity(0.15), lineWidth: 20)
-                    .frame(width: 220, height: 220)
+        ZStack {
+            Circle()
+                .stroke(.blue.opacity(0.26), lineWidth: 2)
+                .frame(width: 220, height: 220)
+            Circle()
+                .fill(.black.opacity(0.72))
+                .frame(width: 196, height: 196)
 
-                // Progress arc
-                Circle()
-                    .trim(from: 0, to: forceProgress)
-                    .stroke(
-                        AngularGradient(
-                            colors: [.blue, .cyan, .green],
-                            center: .center
-                        ),
-                        style: StrokeStyle(lineWidth: 20, lineCap: .round)
-                    )
-                    .frame(width: 220, height: 220)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.1), value: forceProgress)
-
-                // Force value
-                VStack(spacing: 4) {
-                    Text(String(format: "%.1f", unit.convert(deviceVM.currentForce)))
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
-                        .contentTransition(.numericText())
-                        .animation(.easeInOut(duration: 0.1), value: deviceVM.currentForce)
-
-                    Text(unit.abbreviation)
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                }
+            VStack(spacing: 2) {
+                Text("LIVE FORCE")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(String(format: "%.0f", unit.convert(deviceVM.currentForce)))
+                    .font(.system(size: 60, weight: .bold, design: .rounded))
+                Text(unit.abbreviation)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity)
     }
 
-    private var forceProgress: CGFloat {
-        // Normalize force to 0-1 range (assuming max ~60kg)
-        min(CGFloat(deviceVM.currentForce / 60.0), 1.0)
-    }
-
-    private var recordingTimer: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(.red)
-                .frame(width: 10, height: 10)
-                .opacity(pulsingOpacity)
-
-            Text(DateFormatters.durationString(deviceVM.recordingDuration))
-                .font(.title3)
-                .fontWeight(.medium)
-                .monospacedDigit()
+    private func metric(title: String, value: String, unitLabel: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(unitLabel)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 10)
-        .background {
-            Capsule()
-                .fill(.red.opacity(0.1))
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @State private var pulsingOpacity: Double = 1.0
+    private var peakText: String {
+        guard let peak = deviceVM.lastRecording?.peakForce else { return "0" }
+        return String(format: "%.0f", unit.convert(peak))
+    }
 
     private var recordButton: some View {
         Button {
@@ -145,20 +176,10 @@ struct LiveReadingView: View {
         } label: {
             HStack {
                 Image(systemName: deviceVM.isRecording ? "stop.fill" : "record.circle")
-                Text(deviceVM.isRecording ? "Stop Recording" : "Start Recording")
-            }
-            .font(.headline)
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(deviceVM.isRecording ? .red : .blue)
-        .padding(.horizontal, 20)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-                pulsingOpacity = 0.3
+                Text(deviceVM.isRecording ? "Stop Recording" : "Start Test")
             }
         }
+        .buttonStyle(ModernPrimaryButtonStyle())
     }
 }
 

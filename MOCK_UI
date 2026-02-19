@@ -1,0 +1,837 @@
+import React, { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Bluetooth,
+  Home,
+  Settings as SettingsIcon,
+  Activity,
+  BatteryFull,
+  BatteryMedium,
+  BatteryLow,
+  Wifi,
+  ChevronRight,
+  User,
+  LogOut,
+  Shield,
+  FileText,
+  RefreshCcw,
+  TrendingUp,
+} from "lucide-react";
+
+// ------------------------------------------------------------
+// GripFit — High-Fidelity Mock Screens (WHOOP/Oura-inspired)
+// Single-file React component for canvas preview.
+// ------------------------------------------------------------
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function GlassCard({ className = "", children }) {
+  return (
+    <div
+      className={cn(
+        "rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.45)]",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Pill({ children, tone = "neutral" }) {
+  const toneClasses =
+    tone === "live"
+      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+      : tone === "offline"
+        ? "border-white/10 bg-white/5 text-white/60"
+        : "border-white/10 bg-white/5 text-white/70";
+
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium",
+        toneClasses
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function PrimaryButton({ children, className = "", icon: Icon, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full rounded-full px-5 py-4 text-sm font-semibold text-white shadow-[0_18px_60px_rgba(76,125,255,0.22)]",
+        "bg-gradient-to-r from-[#4C7DFF] via-[#8B5CFF] to-[#2DE2C5]",
+        "hover:brightness-110 active:scale-[0.99] transition",
+        "flex items-center justify-center gap-2",
+        className
+      )}
+    >
+      {Icon ? <Icon className="h-4 w-4" /> : null}
+      {children}
+    </button>
+  );
+}
+
+function SecondaryButton({ children, className = "", icon: Icon, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full rounded-full px-5 py-4 text-sm font-semibold",
+        "border border-white/12 bg-white/6 text-white/80",
+        "hover:bg-white/10 active:scale-[0.99] transition",
+        "flex items-center justify-center gap-2",
+        className
+      )}
+    >
+      {Icon ? <Icon className="h-4 w-4" /> : null}
+      {children}
+    </button>
+  );
+}
+
+function TogglePills({ left, right, value, onChange }) {
+  return (
+    <div className="flex rounded-full border border-white/10 bg-white/5 p-1">
+      <button
+        onClick={() => onChange(left)}
+        className={cn(
+          "flex-1 rounded-full px-4 py-2 text-xs font-semibold transition",
+          value === left
+            ? "bg-white/12 text-white shadow-inner"
+            : "text-white/60 hover:text-white/80"
+        )}
+      >
+        {left}
+      </button>
+      <button
+        onClick={() => onChange(right)}
+        className={cn(
+          "flex-1 rounded-full px-4 py-2 text-xs font-semibold transition",
+          value === right
+            ? "bg-white/12 text-white shadow-inner"
+            : "text-white/60 hover:text-white/80"
+        )}
+      >
+        {right}
+      </button>
+    </div>
+  );
+}
+
+function StatNumber({ value, unit }) {
+  return (
+    <div className="flex items-end gap-2">
+      <div className="text-5xl font-bold tracking-tight text-white">
+        {value}
+      </div>
+      <div className="pb-2 text-sm font-semibold text-white/60">{unit}</div>
+    </div>
+  );
+}
+
+function MiniSparkline() {
+  // intentionally decorative — Oura/WHOOP style minimal chart
+  return (
+    <div className="relative h-16 w-full overflow-hidden rounded-2xl border border-white/8 bg-white/3">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(76,125,255,0.35),transparent_60%)]" />
+      <svg
+        className="absolute inset-0"
+        viewBox="0 0 300 80"
+        preserveAspectRatio="none"
+      >
+        <path
+          d="M0,55 C40,50 60,30 95,34 C130,39 140,60 175,55 C210,50 220,20 250,26 C270,30 285,38 300,35"
+          fill="none"
+          stroke="rgba(76,125,255,0.9)"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M0,55 C40,50 60,30 95,34 C130,39 140,60 175,55 C210,50 220,20 250,26 C270,30 285,38 300,35"
+          fill="none"
+          stroke="rgba(139,92,255,0.55)"
+          strokeWidth="10"
+          strokeLinecap="round"
+          opacity="0.2"
+        />
+      </svg>
+      <div className="absolute inset-x-0 bottom-0 h-px bg-white/10" />
+    </div>
+  );
+}
+
+function BatteryIcon({ level = 0.84 }) {
+  if (level > 0.65) return <BatteryFull className="h-4 w-4" />;
+  if (level > 0.3) return <BatteryMedium className="h-4 w-4" />;
+  return <BatteryLow className="h-4 w-4" />;
+}
+
+function TabBar({ active, onChange }) {
+  const tabs = [
+    { key: "dashboard", label: "Dashboard", icon: Home },
+    { key: "device", label: "Device", icon: Bluetooth },
+    { key: "settings", label: "Settings", icon: SettingsIcon },
+  ];
+
+  return (
+    <div className="absolute bottom-5 left-1/2 w-[92%] -translate-x-1/2">
+      <div className="rounded-full border border-white/10 bg-white/6 px-2 py-2 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.45)]">
+        <div className="grid grid-cols-3 gap-2">
+          {tabs.map((t) => {
+            const Icon = t.icon;
+            const isActive = active === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => onChange(t.key)}
+                className={cn(
+                  "relative flex items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-semibold transition",
+                  isActive
+                    ? "bg-white/10 text-white"
+                    : "text-white/55 hover:text-white/80"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span className={cn(isActive ? "opacity-100" : "opacity-70")}>
+                  {t.label}
+                </span>
+                {isActive ? (
+                  <div className="absolute inset-x-6 -bottom-1 h-[2px] rounded-full bg-gradient-to-r from-[#4C7DFF] via-[#8B5CFF] to-[#2DE2C5]" />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScreenShell({ title, rightSlot, children }) {
+  return (
+    <div className="relative h-[760px] w-[360px] overflow-hidden rounded-[42px] border border-white/10 bg-[#070A12] shadow-[0_30px_120px_rgba(0,0,0,0.6)]">
+      {/* background glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(76,125,255,0.25),transparent_55%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(139,92,255,0.18),transparent_55%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_85%,rgba(45,226,197,0.12),transparent_55%)]" />
+
+      {/* top safe area */}
+      <div className="relative z-10 px-6 pt-10">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-3xl font-semibold tracking-tight text-white">
+              {title}
+            </div>
+            <div className="mt-1 text-sm text-white/55">
+              Grip strength insights
+            </div>
+          </div>
+          <div className="pt-1">{rightSlot}</div>
+        </div>
+      </div>
+
+      <div className="relative z-10 px-6 pt-6 pb-28">{children}</div>
+
+      {/* home indicator */}
+      <div className="absolute bottom-2 left-1/2 h-1.5 w-28 -translate-x-1/2 rounded-full bg-white/20" />
+    </div>
+  );
+}
+
+function DashboardScreen({ connected = false, onStartTest }) {
+  return (
+    <ScreenShell
+      title="Dashboard"
+      rightSlot={
+        <Pill tone={connected ? "live" : "offline"}>
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full",
+              connected ? "bg-emerald-300" : "bg-white/30"
+            )}
+          />
+          {connected ? "Live" : "Offline"}
+        </Pill>
+      }
+    >
+      <div className="space-y-4">
+        <GlassCard className="p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-white/55">
+                Today’s Best
+              </div>
+              <div className="mt-3">
+                <StatNumber value="112" unit="lb" />
+              </div>
+              <div className="mt-1 text-sm text-white/65">
+                Right Hand · 3 tests
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/70">
+                <TrendingUp className="h-4 w-4" />
+                +6%
+              </div>
+              <div className="rounded-full bg-gradient-to-r from-[#4C7DFF] via-[#8B5CFF] to-[#2DE2C5] px-3 py-1 text-[11px] font-bold text-white">
+                PR
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <MiniSparkline />
+          </div>
+
+          <div className="mt-4 flex items-center justify-between text-xs text-white/55">
+            <div>Avg: 98 lb</div>
+            <div>Peak: 112 lb</div>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-white">Recent Sessions</div>
+            <div className="text-xs text-white/55">View all</div>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {[
+              { date: "Feb 18", value: "112 lb", hand: "Right", tag: "PR" },
+              { date: "Feb 16", value: "106 lb", hand: "Left", tag: "" },
+              { date: "Feb 14", value: "103 lb", hand: "Right", tag: "" },
+            ].map((row, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/4 px-4 py-3"
+              >
+                <div>
+                  <div className="text-sm font-semibold text-white">
+                    {row.value}
+                  </div>
+                  <div className="text-xs text-white/55">
+                    {row.date} · {row.hand} Hand
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {row.tag ? (
+                    <div className="rounded-full bg-gradient-to-r from-[#4C7DFF] via-[#8B5CFF] to-[#2DE2C5] px-3 py-1 text-[11px] font-bold text-white">
+                      {row.tag}
+                    </div>
+                  ) : null}
+                  <ChevronRight className="h-4 w-4 text-white/35" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+        <PrimaryButton
+          icon={Activity}
+          onClick={onStartTest}
+          className={cn(!connected && "opacity-60")}
+        >
+          Start New Grip Test
+        </PrimaryButton>
+
+        {!connected ? (
+          <div className="text-center text-xs text-white/50">
+            Connect your device to begin testing.
+          </div>
+        ) : null}
+      </div>
+    </ScreenShell>
+  );
+}
+
+function DeviceScreen({ scanning = true, connected = false, onConnect, onStartTest }) {
+  const devices = useMemo(
+    () => [
+      { name: "GripFit Pro", rssi: "Strong", battery: 0.84 },
+      { name: "GripFit Mini", rssi: "Medium", battery: 0.56 },
+      { name: "GripFit Sensor", rssi: "Weak", battery: 0.22 },
+    ],
+    []
+  );
+
+  return (
+    <ScreenShell
+      title="Device"
+      rightSlot={
+        scanning ? (
+          <Pill tone="neutral">
+            <RefreshCcw className="h-3.5 w-3.5" /> Searching
+          </Pill>
+        ) : connected ? (
+          <Pill tone="live">
+            <span className="h-2 w-2 rounded-full bg-emerald-300" /> Connected
+          </Pill>
+        ) : (
+          <Pill tone="offline">
+            <span className="h-2 w-2 rounded-full bg-white/30" /> Idle
+          </Pill>
+        )
+      }
+    >
+      <div className="space-y-4">
+        <GlassCard className="p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-sm font-semibold text-white">
+                {connected ? "GripFit Pro" : "No device connected"}
+              </div>
+              <div className="mt-1 text-xs text-white/55">
+                {connected
+                  ? "BLE active · Signal strong"
+                  : "Scan for nearby grip devices"}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/70">
+              {connected ? (
+                <>
+                  <BatteryIcon level={0.84} /> 84%
+                </>
+              ) : (
+                <>
+                  <Wifi className="h-4 w-4" /> --
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-5 flex items-center justify-center">
+            <div className="relative">
+              <motion.div
+                animate={scanning ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+                transition={{ duration: 1.6, repeat: scanning ? Infinity : 0 }}
+                className="h-28 w-28 rounded-full border border-[#4C7DFF]/40 bg-[#4C7DFF]/10"
+              />
+              <motion.div
+                animate={scanning ? { scale: [1, 1.45, 1] } : { scale: 1 }}
+                transition={{ duration: 1.9, repeat: scanning ? Infinity : 0 }}
+                className="absolute inset-0 h-28 w-28 rounded-full border border-[#8B5CFF]/30 bg-[#8B5CFF]/5"
+              />
+              <motion.div
+                animate={scanning ? { scale: [1, 1.7, 1] } : { scale: 1 }}
+                transition={{ duration: 2.2, repeat: scanning ? Infinity : 0 }}
+                className="absolute inset-0 h-28 w-28 rounded-full border border-[#2DE2C5]/25 bg-[#2DE2C5]/5"
+              />
+
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Bluetooth className="h-8 w-8 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 text-center text-xs text-white/55">
+            {scanning ? "Scanning for nearby devices…" : "Ready"}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-white">Nearby Devices</div>
+            <div className="text-xs text-white/55">Auto-refresh</div>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {devices.map((d, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/4 px-4 py-3"
+              >
+                <div>
+                  <div className="text-sm font-semibold text-white">
+                    {d.name}
+                  </div>
+                  <div className="mt-0.5 text-xs text-white/55">
+                    Signal: {d.rssi}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-white/65">
+                    <BatteryIcon level={d.battery} />
+                    {Math.round(d.battery * 100)}%
+                  </div>
+                  <button
+                    onClick={onConnect}
+                    className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 transition"
+                  >
+                    Pair
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+        <PrimaryButton icon={Activity} onClick={onStartTest}>
+          Start Grip Test
+        </PrimaryButton>
+
+        <SecondaryButton icon={RefreshCcw}>Rescan</SecondaryButton>
+      </div>
+    </ScreenShell>
+  );
+}
+
+function GripTestScreen({ hand = "Right", onSwitchHand }) {
+  const [force, setForce] = useState(74);
+
+  return (
+    <ScreenShell
+      title="Grip Test"
+      rightSlot={<Pill tone="live">◉ Live</Pill>}
+    >
+      <div className="space-y-4">
+        <GlassCard className="p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-white/55">
+                Active Hand
+              </div>
+              <div className="mt-2 text-lg font-semibold text-white">
+                {hand} Hand
+              </div>
+            </div>
+            <button
+              onClick={onSwitchHand}
+              className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 transition"
+            >
+              Switch
+            </button>
+          </div>
+
+          <div className="mt-6 flex items-center justify-center">
+            <div className="relative h-56 w-56">
+              <div className="absolute inset-0 rounded-full border border-white/10 bg-white/5" />
+              <div className="absolute inset-3 rounded-full border border-white/10 bg-[#070A12]" />
+
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-xs font-semibold uppercase tracking-widest text-white/55">
+                    Live Force
+                  </div>
+                  <div className="mt-3 text-6xl font-bold tracking-tight text-white">
+                    {force}
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-white/60">
+                    lb
+                  </div>
+                </div>
+              </div>
+
+              {/* glow ring */}
+              <motion.div
+                animate={{
+                  boxShadow: [
+                    "0 0 0px rgba(76,125,255,0.0)",
+                    "0 0 40px rgba(76,125,255,0.25)",
+                    "0 0 0px rgba(76,125,255,0.0)",
+                  ],
+                }}
+                transition={{ duration: 2.2, repeat: Infinity }}
+                className="absolute inset-0 rounded-full border border-[#4C7DFF]/30"
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
+              <div className="text-xs font-semibold uppercase tracking-widest text-white/55">
+                Peak
+              </div>
+              <div className="mt-2 text-2xl font-bold text-white">112</div>
+              <div className="text-xs text-white/55">lb</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
+              <div className="text-xs font-semibold uppercase tracking-widest text-white/55">
+                Timer
+              </div>
+              <div className="mt-2 text-2xl font-bold text-white">03.2</div>
+              <div className="text-xs text-white/55">sec</div>
+            </div>
+          </div>
+
+          <div className="mt-4 text-xs text-white/55">
+            Squeeze hard. Hold steady.
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-white">Simulate Force</div>
+            <div className="text-xs text-white/55">(mock UI)</div>
+          </div>
+
+          <input
+            type="range"
+            min={0}
+            max={140}
+            value={force}
+            onChange={(e) => setForce(parseInt(e.target.value, 10))}
+            className="mt-4 w-full accent-white"
+          />
+
+          <div className="mt-2 flex items-center justify-between text-xs text-white/55">
+            <span>0</span>
+            <span>140</span>
+          </div>
+        </GlassCard>
+
+        <PrimaryButton>Save Result</PrimaryButton>
+        <SecondaryButton>Discard</SecondaryButton>
+      </div>
+    </ScreenShell>
+  );
+}
+
+function SettingsScreen() {
+  const [units, setUnits] = useState("Pounds");
+  const [defaultHand, setDefaultHand] = useState("Right");
+
+  return (
+    <ScreenShell title="Settings" rightSlot={<Pill tone="neutral">Profile</Pill>}>
+      <div className="space-y-4">
+        <GlassCard className="p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/6">
+                <User className="h-5 w-5 text-white/80" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-white">
+                  Andrew Schaefer
+                </div>
+                <div className="text-xs text-white/55">avschaefer0@gmail.com</div>
+              </div>
+            </div>
+            <button className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 transition">
+              Edit
+            </button>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5">
+          <div className="text-sm font-semibold text-white">Preferences</div>
+
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-white">Units</div>
+                <div className="text-xs text-white/55">
+                  Choose your measurement system
+                </div>
+              </div>
+              <div className="w-44">
+                <TogglePills
+                  left="Kilograms"
+                  right="Pounds"
+                  value={units}
+                  onChange={setUnits}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-white">Default Hand</div>
+                <div className="text-xs text-white/55">
+                  Used when starting a new test
+                </div>
+              </div>
+              <div className="w-36">
+                <TogglePills
+                  left="Left"
+                  right="Right"
+                  value={defaultHand}
+                  onChange={setDefaultHand}
+                />
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5">
+          <div className="text-sm font-semibold text-white">About</div>
+
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/4 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <Shield className="h-4 w-4 text-white/70" />
+                <div className="text-sm font-semibold text-white/85">Privacy</div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-white/35" />
+            </div>
+
+            <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/4 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <FileText className="h-4 w-4 text-white/70" />
+                <div className="text-sm font-semibold text-white/85">Terms</div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-white/35" />
+            </div>
+
+            <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/4 px-4 py-3">
+              <div className="text-sm font-semibold text-white/70">Version</div>
+              <div className="text-sm font-semibold text-white">1.0 (1)</div>
+            </div>
+          </div>
+        </GlassCard>
+
+        <button className="w-full rounded-full border border-red-400/25 bg-red-500/10 px-5 py-4 text-sm font-semibold text-red-200 hover:bg-red-500/15 transition flex items-center justify-center gap-2">
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </button>
+      </div>
+    </ScreenShell>
+  );
+}
+
+export default function GripFitMockScreens() {
+  const [active, setActive] = useState("dashboard");
+  const [connected, setConnected] = useState(true);
+  const [hand, setHand] = useState("Right");
+
+  const screen =
+    active === "dashboard" ? (
+      <DashboardScreen
+        connected={connected}
+        onStartTest={() => setActive("test")}
+      />
+    ) : active === "device" ? (
+      <DeviceScreen
+        scanning={!connected}
+        connected={connected}
+        onConnect={() => setConnected(true)}
+        onStartTest={() => setActive("test")}
+      />
+    ) : active === "settings" ? (
+      <SettingsScreen />
+    ) : (
+      <GripTestScreen
+        hand={hand}
+        onSwitchHand={() => setHand(hand === "Right" ? "Left" : "Right")}
+      />
+    );
+
+  return (
+    <div className="min-h-screen w-full bg-[#05060C] p-10">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6">
+          <div className="text-2xl font-semibold text-white tracking-tight">
+            GripFit — Modern BLE Health App Mock Screens
+          </div>
+          <div className="mt-1 text-sm text-white/55">
+            WHOOP / Oura-inspired UI direction (dark premium + glass cards + neon
+            accents)
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="flex items-start justify-center">
+            <div className="relative">
+              {screen}
+              <TabBar
+                active={active === "test" ? "dashboard" : active}
+                onChange={(k) => setActive(k)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <GlassCard className="p-6">
+              <div className="text-sm font-semibold text-white">
+                Screen Controls
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setActive("dashboard")}
+                  className={cn(
+                    "rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm font-semibold text-white/75 hover:bg-white/8 transition",
+                    active === "dashboard" && "bg-white/10 text-white"
+                  )}
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => setActive("device")}
+                  className={cn(
+                    "rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm font-semibold text-white/75 hover:bg-white/8 transition",
+                    active === "device" && "bg-white/10 text-white"
+                  )}
+                >
+                  Device
+                </button>
+                <button
+                  onClick={() => setActive("test")}
+                  className={cn(
+                    "rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm font-semibold text-white/75 hover:bg-white/8 transition",
+                    active === "test" && "bg-white/10 text-white"
+                  )}
+                >
+                  Grip Test
+                </button>
+                <button
+                  onClick={() => setActive("settings")}
+                  className={cn(
+                    "rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm font-semibold text-white/75 hover:bg-white/8 transition",
+                    active === "settings" && "bg-white/10 text-white"
+                  )}
+                >
+                  Settings
+                </button>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-white/4 px-4 py-4">
+                <div>
+                  <div className="text-sm font-semibold text-white">Device</div>
+                  <div className="text-xs text-white/55">
+                    Toggle connected state
+                  </div>
+                </div>
+                <button
+                  onClick={() => setConnected((v) => !v)}
+                  className={cn(
+                    "rounded-full px-4 py-2 text-xs font-semibold transition",
+                    connected
+                      ? "bg-emerald-400/15 text-emerald-200 border border-emerald-400/25"
+                      : "bg-white/6 text-white/70 border border-white/10"
+                  )}
+                >
+                  {connected ? "Connected" : "Offline"}
+                </button>
+              </div>
+            </GlassCard>
+
+            <GlassCard className="p-6">
+              <div className="text-sm font-semibold text-white">
+                Design System Highlights
+              </div>
+              <ul className="mt-4 space-y-2 text-sm text-white/65">
+                <li>• Dark premium background (WHOOP/Oura baseline)</li>
+                <li>• Glass cards + blur + soft shadows</li>
+                <li>• Hero metric (big numbers) prioritized</li>
+                <li>• Subtle neon gradients for premium feel</li>
+                <li>• Rounded everything (pills + 2xl radii)</li>
+                <li>• Micro-interactions (scan pulse + glow ring)</li>
+              </ul>
+            </GlassCard>
+
+            <div className="text-xs text-white/40">
+              Note: This is a UI mock, not production app code. It is intended as
+              a direct baseline for Figma + SwiftUI implementation.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

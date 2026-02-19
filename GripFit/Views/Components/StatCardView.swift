@@ -7,32 +7,34 @@ struct StatCardView: View {
     var color: Color = .blue
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Image(systemName: icon)
-                .font(.title2)
+                .font(.headline)
                 .foregroundStyle(color)
+                .padding(8)
+                .background(color.opacity(0.12), in: Circle())
 
             Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.title3.weight(.bold))
                 .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
 
             Text(title)
-                .font(.caption)
+                .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                .fill(.white.opacity(0.06))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                .stroke(.white.opacity(0.12), lineWidth: 1)
+        )
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .padding(.horizontal, 12)
-        .background {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.background)
-                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(color.opacity(0.2), lineWidth: 1)
-        }
     }
 }
 

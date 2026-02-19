@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 enum AppConstants {
     static let appName = "GripFit"
@@ -12,7 +13,7 @@ enum AppConstants {
 
     enum Icons {
         static let dashboard = "house.fill"
-        static let device = "sensor.fill"
+        static let device = "bluetooth"
         static let settings = "gearshape.fill"
         static let recording = "waveform"
         static let leftHand = "hand.point.left.fill"
@@ -22,7 +23,7 @@ enum AppConstants {
         static let chartBar = "chart.bar.fill"
         static let person = "person.fill"
         static let signOut = "rectangle.portrait.and.arrow.right"
-        static let bluetooth = "antenna.radiowaves.left.and.right"
+        static let bluetooth = "bluetooth"
         static let connected = "checkmark.circle.fill"
         static let disconnected = "xmark.circle.fill"
         static let scanning = "magnifyingglass"
@@ -42,6 +43,15 @@ enum AppConstants {
         static let passwordTooShort = "Password must be at least \(AppConstants.minimumPasswordLength) characters."
         static let invalidEmail = "Please enter a valid email address."
         static let emptyFields = "Please fill in all fields."
+    }
+
+    enum UI {
+        static let screenHorizontalPadding: CGFloat = 20
+        static let sectionSpacing: CGFloat = 16
+        static let cardCornerRadius: CGFloat = 22
+        static let compactCardCornerRadius: CGFloat = 16
+        static let buttonCornerRadius: CGFloat = 16
+        static let largeTitleSpacing: CGFloat = 6
     }
 }
 

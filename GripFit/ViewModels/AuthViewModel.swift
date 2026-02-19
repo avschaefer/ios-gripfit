@@ -23,12 +23,6 @@ final class AuthViewModel {
         listenToAuthState()
     }
 
-    deinit {
-        if let handle = authStateHandle {
-            Auth.auth().removeStateDidChangeListener(handle)
-        }
-    }
-
     // MARK: - Auth State
 
     private func listenToAuthState() {
