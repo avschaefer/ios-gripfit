@@ -30,7 +30,8 @@ struct MainTabView: View {
 
             DeviceConnectionView(deviceManager: deviceManager)
                 .tabItem {
-                    Label(AppConstants.Tabs.device, systemImage: AppConstants.Icons.device)
+                    Image(uiImage: BluetoothIconRenderer.tabImage())
+                    Text(AppConstants.Tabs.device)
                 }
 
             SettingsView()

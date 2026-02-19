@@ -11,30 +11,24 @@ struct LoginView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 32) {
-                    // Logo / Header
-                    headerSection
+            ZStack {
+                ModernScreenBackground()
 
-                    // Form Fields
-                    formSection
-
-                    // Sign In Button
-                    signInButton
-
-                    Text("or")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    googleSignInButton
-
-                    // Links
-                    linksSection
+                ScrollView {
+                    VStack(spacing: 28) {
+                        Spacer().frame(height: 20)
+                        headerSection
+                        formSection
+                        signInButton
+                        dividerSection
+                        googleSignInButton
+                        linksSection
+                        Spacer().frame(height: 20)
+                    }
+                    .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 60)
+                .scrollDismissesKeyboard(.interactively)
             }
-            .scrollDismissesKeyboard(.interactively)
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
@@ -77,14 +71,21 @@ struct LoginView: View {
     // MARK: - Subviews
 
     private var headerSection: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "hand.raised.fill")
-                .font(.system(size: 60))
-                .foregroundStyle(.blue)
+        VStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(.blue.opacity(0.14))
+                    .frame(width: 90, height: 90)
+                Circle()
+                    .stroke(.blue.opacity(0.4), lineWidth: 1.5)
+                    .frame(width: 90, height: 90)
+                Image(systemName: "hand.raised.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(.white)
+            }
 
             Text(AppConstants.appName)
-                .font(.largeTitle)
-                .fontWeight(.bold)
+                .font(.largeTitle.weight(.bold))
 
             Text("Track your grip strength")
                 .font(.subheadline)
@@ -93,22 +94,40 @@ struct LoginView: View {
     }
 
     private var formSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             TextField("Email", text: $email)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.plain)
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
                 .autocapitalization(.none)
                 .autocorrectionDisabled()
                 .submitLabel(.next)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                        .fill(.white.opacity(0.07))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                        .stroke(.white.opacity(0.14), lineWidth: 1)
+                )
 
             SecureField("Password", text: $password)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.plain)
                 .textContentType(.password)
                 .submitLabel(.done)
-                .onSubmit {
-                    signIn()
-                }
+                .onSubmit { signIn() }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                        .fill(.white.opacity(0.07))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                        .stroke(.white.opacity(0.14), lineWidth: 1)
+                )
         }
     }
 
@@ -120,14 +139,25 @@ struct LoginView: View {
                         .tint(.white)
                 } else {
                     Text("Sign In")
-                        .fontWeight(.semibold)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
         }
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(ModernPrimaryButtonStyle())
         .disabled(email.isEmpty || password.isEmpty || authVM.isLoading)
+    }
+
+    private var dividerSection: some View {
+        HStack(spacing: 12) {
+            Rectangle()
+                .fill(.white.opacity(0.12))
+                .frame(height: 1)
+            Text("or")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            Rectangle()
+                .fill(.white.opacity(0.12))
+                .frame(height: 1)
+        }
     }
 
     private var googleSignInButton: some View {
@@ -135,12 +165,9 @@ struct LoginView: View {
             HStack(spacing: 10) {
                 Image(systemName: "globe")
                 Text("Continue with Google")
-                    .fontWeight(.semibold)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(ModernSecondaryButtonStyle())
         .disabled(authVM.isLoading)
     }
 
@@ -151,14 +178,16 @@ struct LoginView: View {
                 showForgotPassword = true
             }
             .font(.subheadline)
+            .foregroundStyle(.blue.opacity(0.85))
 
-            HStack {
+            HStack(spacing: 4) {
                 Text("Don't have an account?")
                     .foregroundStyle(.secondary)
                 Button("Create Account") {
                     showRegister = true
                 }
                 .fontWeight(.semibold)
+                .foregroundStyle(.blue.opacity(0.85))
             }
             .font(.subheadline)
         }
@@ -197,5 +226,5 @@ struct LoginView: View {
 #Preview {
     LoginView()
         .environment(AuthViewModel())
+        .preferredColorScheme(.dark)
 }
-

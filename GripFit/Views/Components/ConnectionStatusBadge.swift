@@ -1,4 +1,45 @@
 import SwiftUI
+import UIKit
+
+// MARK: - Custom Bluetooth Icon (no SF Symbol exists for this)
+
+struct BluetoothIcon: Shape {
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width
+        let h = rect.height
+        var path = Path()
+        path.move(to: CGPoint(x: w * 0.22, y: h * 0.72))
+        path.addLine(to: CGPoint(x: w * 0.72, y: h * 0.28))
+        path.addLine(to: CGPoint(x: w * 0.50, y: h * 0.05))
+        path.addLine(to: CGPoint(x: w * 0.50, y: h * 0.95))
+        path.addLine(to: CGPoint(x: w * 0.72, y: h * 0.72))
+        path.addLine(to: CGPoint(x: w * 0.22, y: h * 0.28))
+        return path
+    }
+}
+
+enum BluetoothIconRenderer {
+    static func tabImage(size: CGFloat = 25, lineWidth: CGFloat = 1.8) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
+        let img = renderer.image { _ in
+            let w = size
+            let h = size
+            let path = UIBezierPath()
+            path.move(to: CGPoint(x: w * 0.22, y: h * 0.72))
+            path.addLine(to: CGPoint(x: w * 0.72, y: h * 0.28))
+            path.addLine(to: CGPoint(x: w * 0.50, y: h * 0.05))
+            path.addLine(to: CGPoint(x: w * 0.50, y: h * 0.95))
+            path.addLine(to: CGPoint(x: w * 0.72, y: h * 0.72))
+            path.addLine(to: CGPoint(x: w * 0.22, y: h * 0.28))
+            path.lineWidth = lineWidth
+            path.lineCapStyle = .round
+            path.lineJoinStyle = .round
+            UIColor.white.setStroke()
+            path.stroke()
+        }
+        return img.withRenderingMode(.alwaysTemplate)
+    }
+}
 
 // MARK: - Shared Design System (Dark Theme)
 
@@ -116,6 +157,26 @@ struct ModernPrimaryButtonStyle: ButtonStyle {
             .overlay(
                 RoundedRectangle(cornerRadius: AppConstants.UI.buttonCornerRadius, style: .continuous)
                     .stroke(.blue.opacity(0.55), lineWidth: 1.5)
+            )
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .opacity(configuration.isPressed ? 0.88 : 1)
+    }
+}
+
+struct ModernSecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.headline.weight(.semibold))
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(
+                RoundedRectangle(cornerRadius: AppConstants.UI.buttonCornerRadius, style: .continuous)
+                    .fill(.white.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppConstants.UI.buttonCornerRadius, style: .continuous)
+                    .stroke(.white.opacity(0.18), lineWidth: 1)
             )
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .opacity(configuration.isPressed ? 0.88 : 1)

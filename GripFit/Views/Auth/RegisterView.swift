@@ -10,27 +10,23 @@ struct RegisterView: View {
     @State private var confirmPassword: String = ""
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                // Header
-                headerSection
+        ZStack {
+            ModernScreenBackground()
 
-                // Form Fields
-                formSection
-
-                // Validation Messages
-                validationSection
-
-                // Create Account Button
-                createAccountButton
-
-                // Link back to login
-                backToLoginLink
+            ScrollView {
+                VStack(spacing: 24) {
+                    headerSection
+                    formSection
+                    validationSection
+                    createAccountButton
+                    backToLoginLink
+                    Spacer().frame(height: 20)
+                }
+                .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+                .padding(.top, 20)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 32)
+            .scrollDismissesKeyboard(.interactively)
         }
-        .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -41,6 +37,7 @@ struct RegisterView: View {
         }
         .navigationTitle("Create Account")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .alert("Error", isPresented: Bindable(authVM).showError) {
             Button("OK", role: .cancel) {
                 authVM.clearError()
@@ -53,14 +50,21 @@ struct RegisterView: View {
     // MARK: - Subviews
 
     private var headerSection: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "person.badge.plus")
-                .font(.system(size: 50))
-                .foregroundStyle(.blue)
+        VStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(.blue.opacity(0.14))
+                    .frame(width: 72, height: 72)
+                Circle()
+                    .stroke(.blue.opacity(0.4), lineWidth: 1.5)
+                    .frame(width: 72, height: 72)
+                Image(systemName: "person.badge.plus")
+                    .font(.system(size: 28))
+                    .foregroundStyle(.white)
+            }
 
             Text("Join \(AppConstants.appName)")
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.title2.weight(.bold))
 
             Text("Create your account to start tracking")
                 .font(.subheadline)
@@ -69,54 +73,74 @@ struct RegisterView: View {
     }
 
     private var formSection: some View {
-        VStack(spacing: 16) {
-            TextField("Display Name", text: $displayName)
-                .textFieldStyle(.roundedBorder)
-                .textContentType(.name)
-                .autocapitalization(.words)
-                .submitLabel(.next)
+        VStack(spacing: 14) {
+            darkField {
+                TextField("Display Name", text: $displayName)
+                    .textFieldStyle(.plain)
+                    .textContentType(.name)
+                    .autocapitalization(.words)
+                    .submitLabel(.next)
+            }
 
-            TextField("Email", text: $email)
-                .textFieldStyle(.roundedBorder)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .autocapitalization(.none)
-                .autocorrectionDisabled()
-                .submitLabel(.next)
+            darkField {
+                TextField("Email", text: $email)
+                    .textFieldStyle(.plain)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    .autocorrectionDisabled()
+                    .submitLabel(.next)
+            }
 
-            SecureField("Password (min. \(AppConstants.minimumPasswordLength) characters)", text: $password)
-                .textFieldStyle(.roundedBorder)
-                .textContentType(.newPassword)
-                .submitLabel(.next)
+            darkField {
+                SecureField("Password (min. \(AppConstants.minimumPasswordLength) chars)", text: $password)
+                    .textFieldStyle(.plain)
+                    .textContentType(.newPassword)
+                    .submitLabel(.next)
+            }
 
-            SecureField("Confirm Password", text: $confirmPassword)
-                .textFieldStyle(.roundedBorder)
-                .textContentType(.newPassword)
-                .submitLabel(.done)
-                .onSubmit {
-                    createAccount()
-                }
+            darkField {
+                SecureField("Confirm Password", text: $confirmPassword)
+                    .textFieldStyle(.plain)
+                    .textContentType(.newPassword)
+                    .submitLabel(.done)
+                    .onSubmit { createAccount() }
+            }
         }
     }
 
+    private func darkField<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                    .fill(.white.opacity(0.07))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                    .stroke(.white.opacity(0.14), lineWidth: 1)
+            )
+    }
+
     private var validationSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             if !password.isEmpty && password.count < AppConstants.minimumPasswordLength {
                 Label("Password must be at least \(AppConstants.minimumPasswordLength) characters", systemImage: "xmark.circle.fill")
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.red.opacity(0.85))
             }
 
             if !confirmPassword.isEmpty && password != confirmPassword {
                 Label("Passwords do not match", systemImage: "xmark.circle.fill")
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.red.opacity(0.85))
             }
 
             if !password.isEmpty && password.count >= AppConstants.minimumPasswordLength && !confirmPassword.isEmpty && password == confirmPassword {
                 Label("Passwords match", systemImage: "checkmark.circle.fill")
                     .font(.caption)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.green.opacity(0.85))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -130,24 +154,22 @@ struct RegisterView: View {
                         .tint(.white)
                 } else {
                     Text("Create Account")
-                        .fontWeight(.semibold)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
         }
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(ModernPrimaryButtonStyle())
         .disabled(!isFormValid || authVM.isLoading)
     }
 
     private var backToLoginLink: some View {
-        HStack {
+        HStack(spacing: 4) {
             Text("Already have an account?")
                 .foregroundStyle(.secondary)
             Button("Sign In") {
                 dismiss()
             }
             .fontWeight(.semibold)
+            .foregroundStyle(.blue.opacity(0.85))
         }
         .font(.subheadline)
     }
@@ -179,6 +201,6 @@ struct RegisterView: View {
     NavigationStack {
         RegisterView()
             .environment(AuthViewModel())
+            .preferredColorScheme(.dark)
     }
 }
-

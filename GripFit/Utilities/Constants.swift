@@ -13,7 +13,7 @@ enum AppConstants {
 
     enum Icons {
         static let dashboard = "house.fill"
-        static let device = "bluetooth"
+        static let device = "dot.radiowaves.left.and.right"
         static let settings = "gearshape.fill"
         static let recording = "waveform"
         static let leftHand = "hand.point.left.fill"
