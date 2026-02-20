@@ -65,6 +65,35 @@ final class DashboardViewModel {
         return ((todaysBest - overallAvg) / overallAvg) * 100
     }
 
+    struct DailyAverage: Identifiable {
+        let id = UUID()
+        let date: Date
+        let label: String
+        let average: Double
+    }
+
+    var sevenDayAverages: [DailyAverage] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let shortFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "EEE"
+            return f
+        }()
+
+        return (0..<7).reversed().compactMap { offset -> DailyAverage? in
+            guard let day = cal.date(byAdding: .day, value: -offset, to: today) else { return nil }
+            let nextDay = cal.date(byAdding: .day, value: 1, to: day)!
+            let dayRecordings = recordings.filter { $0.timestamp >= day && $0.timestamp < nextDay }
+            let avg = dayRecordings.isEmpty ? 0 : dayRecordings.map(\.peakForce).reduce(0, +) / Double(dayRecordings.count)
+            return DailyAverage(date: day, label: shortFormatter.string(from: day), average: avg)
+        }
+    }
+
+    var recentRecordings: [GripRecording] {
+        Array(recordings.sorted { $0.timestamp > $1.timestamp }.prefix(5))
+    }
+
     // MARK: - Data Loading
 
     func loadRecordings(userId: String) async {
