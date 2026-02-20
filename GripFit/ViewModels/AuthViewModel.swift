@@ -127,6 +127,19 @@ final class AuthViewModel {
         isLoading = false
     }
 
+    func updateEmail(_ newEmail: String) async -> Bool {
+        isLoading = true
+        do {
+            try await authService.updateEmail(newEmail)
+            isLoading = false
+            return true
+        } catch {
+            showErrorMessage(error.localizedDescription)
+            isLoading = false
+            return false
+        }
+    }
+
     // MARK: - Sign Out
 
     func signOut() {

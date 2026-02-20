@@ -153,6 +153,15 @@ final class AuthService {
         }
     }
 
+    func updateEmail(_ newEmail: String) async throws {
+        guard let user = Auth.auth().currentUser else { return }
+        do {
+            try await user.sendEmailVerification(beforeUpdatingEmail: newEmail)
+        } catch {
+            throw AuthError.from(error)
+        }
+    }
+
     func resetPassword(email: String) async throws {
         do {
             try await Auth.auth().sendPasswordReset(withEmail: email)

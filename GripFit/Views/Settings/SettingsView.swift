@@ -122,6 +122,8 @@ struct SettingsView: View {
     @State private var settingsVM = SettingsViewModel()
     @State private var showEditProfile = false
     @State private var editName = ""
+    @State private var editEmail = ""
+    @State private var showEmailVerificationSent = false
 
     var body: some View {
         NavigationStack {
@@ -223,6 +225,7 @@ struct SettingsView: View {
 
                 Button {
                     editName = settingsVM.displayName
+                    editEmail = settingsVM.email
                     showEditProfile = true
                 } label: {
                     Text("Edit")
@@ -385,24 +388,31 @@ struct SettingsView: View {
                                 )
                         }
 
-                        VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("Email")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(.secondary)
-                            Text(settingsVM.email)
-                                .font(.subheadline)
-                                .foregroundStyle(.primary.opacity(0.7))
+                            TextField("Email address", text: $editEmail)
+                                .textFieldStyle(.plain)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
+                                .autocorrectionDisabled()
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 14)
-                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(
                                     RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
-                                        .fill(.white.opacity(0.04))
+                                        .fill(.white.opacity(0.07))
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
-                                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                                        .stroke(.white.opacity(0.14), lineWidth: 1)
                                 )
+                            if editEmail != settingsVM.email && !editEmail.isEmpty {
+                                Text("A verification email will be sent to the new address. Your email will update after you confirm.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
 
                         VStack(alignment: .leading, spacing: 8) {
@@ -422,15 +432,29 @@ struct SettingsView: View {
                             }
                             .buttonStyle(ModernSecondaryButtonStyle())
 
-                            Text("A reset link will be sent to your email address.")
+                            Text("A reset link will be sent to your current email.")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                         }
 
                         Button {
                             Task {
-                                await authVM.updateDisplayName(editName)
-                                settingsVM.displayName = editName
+                                let nameChanged = editName != settingsVM.displayName
+                                let emailChanged = editEmail != settingsVM.email && !editEmail.isEmpty
+
+                                if nameChanged {
+                                    await authVM.updateDisplayName(editName)
+                                    settingsVM.displayName = editName
+                                }
+
+                                if emailChanged {
+                                    let sent = await authVM.updateEmail(editEmail)
+                                    if sent {
+                                        showEmailVerificationSent = true
+                                        return
+                                    }
+                                }
+
                                 showEditProfile = false
                             }
                         } label: {
@@ -457,6 +481,13 @@ struct SettingsView: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .alert("Verification Email Sent", isPresented: $showEmailVerificationSent) {
+            Button("OK") {
+                showEditProfile = false
+            }
+        } message: {
+            Text("Check \(editEmail) for a verification link. Your email will update once confirmed.")
+        }
     }
 }
 
