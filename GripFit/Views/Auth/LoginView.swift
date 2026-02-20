@@ -20,9 +20,10 @@ struct LoginView: View {
                         headerSection
                         formSection
                         signInButton
+                        createAccountButton
                         dividerSection
                         googleSignInButton
-                        linksSection
+                        forgotPasswordLink
                         Spacer().frame(height: 20)
                     }
                     .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
@@ -165,26 +166,25 @@ struct LoginView: View {
         .disabled(authVM.isLoading)
     }
 
-    private var linksSection: some View {
-        VStack(spacing: 16) {
-            Button("Forgot Password?") {
-                forgotPasswordEmail = email
-                showForgotPassword = true
+    private var createAccountButton: some View {
+        Button {
+            showRegister = true
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "envelope")
+                Text("Sign Up with Email")
             }
-            .font(.subheadline)
-            .foregroundStyle(.blue.opacity(0.85))
-
-            HStack(spacing: 4) {
-                Text("Don't have an account?")
-                    .foregroundStyle(.secondary)
-                Button("Create Account") {
-                    showRegister = true
-                }
-                .fontWeight(.semibold)
-                .foregroundStyle(.blue.opacity(0.85))
-            }
-            .font(.subheadline)
         }
+        .buttonStyle(ModernSecondaryButtonStyle())
+    }
+
+    private var forgotPasswordLink: some View {
+        Button("Forgot Password?") {
+            forgotPasswordEmail = email
+            showForgotPassword = true
+        }
+        .font(.subheadline)
+        .foregroundStyle(.blue.opacity(0.85))
     }
 
     // MARK: - Actions

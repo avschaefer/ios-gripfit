@@ -14,21 +14,55 @@ final class DashboardViewModel {
 
     // MARK: - Computed Stats
 
-    var maxGripForce: Double {
-        recordings.map(\.peakForce).max() ?? 0
-    }
-
-    var averageGripForce: Double {
-        guard !recordings.isEmpty else { return 0 }
-        return recordings.map(\.peakForce).reduce(0, +) / Double(recordings.count)
+    var hasRecordings: Bool {
+        !recordings.isEmpty
     }
 
     var totalSessions: Int {
         recordings.count
     }
 
-    var hasRecordings: Bool {
-        !recordings.isEmpty
+    var allTimePeak: Double {
+        recordings.map(\.peakForce).max() ?? 0
+    }
+
+    private var todaysRecordings: [GripRecording] {
+        let cal = Calendar.current
+        return recordings.filter { cal.isDateInToday($0.timestamp) }
+    }
+
+    var todaysBest: Double {
+        todaysRecordings.map(\.peakForce).max() ?? 0
+    }
+
+    var todaysTestCount: Int {
+        todaysRecordings.count
+    }
+
+    var todaysBestHand: Hand? {
+        guard let best = todaysRecordings.max(by: { $0.peakForce < $1.peakForce }) else { return nil }
+        return best.hand
+    }
+
+    var threeDayAverage: Double {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date()
+        let recent = recordings.filter { $0.timestamp >= cutoff }
+        guard !recent.isEmpty else { return 0 }
+        return recent.map(\.peakForce).reduce(0, +) / Double(recent.count)
+    }
+
+    var oneMonthAverage: Double {
+        let cutoff = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+        let recent = recordings.filter { $0.timestamp >= cutoff }
+        guard !recent.isEmpty else { return 0 }
+        return recent.map(\.peakForce).reduce(0, +) / Double(recent.count)
+    }
+
+    var increasePercent: Double? {
+        guard allTimePeak > 0 else { return nil }
+        let overallAvg = recordings.map(\.peakForce).reduce(0, +) / Double(recordings.count)
+        guard overallAvg > 0 else { return nil }
+        return ((todaysBest - overallAvg) / overallAvg) * 100
     }
 
     // MARK: - Data Loading

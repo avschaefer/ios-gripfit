@@ -105,38 +105,89 @@ struct DashboardView: View {
 
     private var statsSection: some View {
         ModernCard {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    Text("Today's Best")
-                        .font(.subheadline.weight(.semibold))
+            VStack(alignment: .leading, spacing: 16) {
+                Text("TODAY'S BEST")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .tracking(1)
+
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(String(format: "%.0f", unit.convert(dashboardVM.todaysBest)))
+                        .font(.system(size: 52, weight: .bold, design: .rounded))
+                        .contentTransition(.numericText())
+                    Text(unit.abbreviation)
+                        .font(.title3.weight(.medium))
                         .foregroundStyle(.secondary)
-                    Spacer()
-                    ModernPillBadge(
-                        text: dashboardVM.maxGripForce > 0 ? "+\(Int(dashboardVM.maxGripForce))" : "No Data",
-                        tone: dashboardVM.maxGripForce > 0 ? .positive : .neutral
-                    )
                 }
 
-                Text(unit.format(dashboardVM.maxGripForce))
-                    .font(.system(size: 38, weight: .bold, design: .rounded))
-                    .contentTransition(.numericText())
+                if let hand = dashboardVM.todaysBestHand {
+                    Text("\(hand.displayName) Hand · \(dashboardVM.todaysTestCount) test\(dashboardVM.todaysTestCount == 1 ? "" : "s")")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("No tests today")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
 
-                VStack(spacing: 10) {
-                    StatCardView(
-                        title: "Average",
-                        value: unit.format(dashboardVM.averageGripForce),
-                        icon: AppConstants.Icons.chartBar,
-                        color: .blue
+                Divider()
+                    .overlay(.white.opacity(0.08))
+
+                HStack(spacing: 0) {
+                    summaryMetric(
+                        title: "3 Day Avg",
+                        value: String(format: "%.0f", unit.convert(dashboardVM.threeDayAverage)),
+                        unit: unit.abbreviation
                     )
-                    StatCardView(
-                        title: "Sessions",
-                        value: "\(dashboardVM.totalSessions)",
-                        icon: "number",
-                        color: .green
+                    summaryMetric(
+                        title: "1 Mo Avg",
+                        value: String(format: "%.0f", unit.convert(dashboardVM.oneMonthAverage)),
+                        unit: unit.abbreviation
+                    )
+                    summaryMetric(
+                        title: "All Time",
+                        value: String(format: "%.0f", unit.convert(dashboardVM.allTimePeak)),
+                        unit: unit.abbreviation
+                    )
+                    summaryMetric(
+                        title: "Increase",
+                        value: increaseText,
+                        unit: nil,
+                        color: increaseColor
                     )
                 }
             }
         }
+    }
+
+    private func summaryMetric(title: String, value: String, unit: String?, color: Color = .white) -> some View {
+        VStack(spacing: 4) {
+            Text(title)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundStyle(color)
+                if let unit {
+                    Text(unit)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var increaseText: String {
+        guard let pct = dashboardVM.increasePercent else { return "--" }
+        let sign = pct >= 0 ? "+" : ""
+        return "\(sign)\(Int(pct))%"
+    }
+
+    private var increaseColor: Color {
+        guard let pct = dashboardVM.increasePercent else { return .secondary }
+        return pct >= 0 ? .green : .red.opacity(0.85)
     }
 
     // MARK: - States
