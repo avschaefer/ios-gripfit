@@ -73,11 +73,20 @@ struct LoginView: View {
 
     private var headerSection: some View {
         VStack(spacing: 14) {
-            Image("AppLogo")
-                .resizable()
-                .scaledToFill()
-                .frame(width: 120, height: 120)
-                .clipShape(Circle())
+            ZStack {
+                Circle()
+                    .fill(.blue.opacity(0.14))
+                    .frame(width: 130, height: 130)
+                Circle()
+                    .stroke(.blue.opacity(0.55), lineWidth: 1.5)
+                    .frame(width: 130, height: 130)
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 120, height: 120)
+                    .clipShape(Circle())
+                    .blendMode(.lighten)
+            }
 
             Text(AppConstants.appName)
                 .font(.largeTitle.weight(.bold))
