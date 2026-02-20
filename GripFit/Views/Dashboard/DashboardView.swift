@@ -26,7 +26,8 @@ struct DashboardView: View {
                 .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
                 .padding(.top, 10)
             }
-            .navigationTitle(AppConstants.Tabs.dashboard)
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("")
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(item: $selectedRecording) { recording in
                 RecordingDetailView(recording: recording)
@@ -51,9 +52,23 @@ struct DashboardView: View {
 
     // MARK: - Content
 
+    private var header: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Dashboard")
+                    .font(.title.weight(.bold))
+                Text("Your grip performance")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+    }
+
     private var contentView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppConstants.UI.sectionSpacing) {
+                header
                 statsSection
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -128,6 +143,7 @@ struct DashboardView: View {
 
     private var loadingView: some View {
         VStack(spacing: 14) {
+            Spacer()
             ProgressView()
                 .scaleEffect(1.25)
                 .tint(.blue)
@@ -139,7 +155,8 @@ struct DashboardView: View {
     }
 
     private var emptyStateView: some View {
-        VStack {
+        VStack(alignment: .leading) {
+            header
             Spacer()
             ModernCard {
                 VStack(spacing: 14) {

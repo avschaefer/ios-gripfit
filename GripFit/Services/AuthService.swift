@@ -142,6 +142,17 @@ final class AuthService {
         }
     }
 
+    func updateDisplayName(_ name: String) async throws {
+        guard let user = Auth.auth().currentUser else { return }
+        let changeRequest = user.createProfileChangeRequest()
+        changeRequest.displayName = name
+        do {
+            try await changeRequest.commitChanges()
+        } catch {
+            throw AuthError.from(error)
+        }
+    }
+
     func resetPassword(email: String) async throws {
         do {
             try await Auth.auth().sendPasswordReset(withEmail: email)

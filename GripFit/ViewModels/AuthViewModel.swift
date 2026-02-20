@@ -113,6 +113,20 @@ final class AuthViewModel {
         isLoading = false
     }
 
+    // MARK: - Update Profile
+
+    func updateDisplayName(_ name: String) async {
+        isLoading = true
+        do {
+            try await authService.updateDisplayName(name)
+            currentUserDisplayName = name
+            try await databaseService.updateDisplayName(userId: currentUserId ?? "", name: name)
+        } catch {
+            showErrorMessage(error.localizedDescription)
+        }
+        isLoading = false
+    }
+
     // MARK: - Sign Out
 
     func signOut() {

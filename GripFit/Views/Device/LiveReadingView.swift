@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct LiveReadingView: View {
-    @Environment(\.dismiss) private var dismiss
     @Bindable var deviceVM: DeviceViewModel
 
     private var unit: ForceUnit {
@@ -54,11 +53,15 @@ struct LiveReadingView: View {
                     recordButton
 
                     if !deviceVM.isRecording {
-                        Button("Done") {
-                            dismiss()
+                        Button(role: .destructive) {
+                            deviceVM.disconnect()
+                        } label: {
+                            Text("Disconnect")
+                                .font(.subheadline.weight(.medium))
+                                .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
-                        .foregroundStyle(.secondary)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.red.opacity(0.85))
                     }
                 }
                 .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
@@ -69,17 +72,7 @@ struct LiveReadingView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("")
         .toolbarBackground(.hidden, for: .navigationBar)
-        .navigationBarBackButtonHidden(deviceVM.isRecording)
-        .alert("Recording Saved!", isPresented: $deviceVM.showRecordingSaved) {
-            Button("View Dashboard") {
-                dismiss()
-            }
-            Button("Continue", role: .cancel) {}
-        } message: {
-            if let recording = deviceVM.lastRecording {
-                Text("Peak force: \(unit.format(recording.peakForce))\nDuration: \(DateFormatters.durationString(recording.duration))")
-            }
-        }
+        .navigationBarBackButtonHidden(true)
         .alert("Error", isPresented: $deviceVM.showError) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -123,11 +116,14 @@ struct LiveReadingView: View {
     private var forceDisplay: some View {
         ZStack {
             Circle()
-                .stroke(.blue.opacity(0.26), lineWidth: 2)
+                .fill(.blue.opacity(0.14))
                 .frame(width: 220, height: 220)
             Circle()
-                .fill(.black.opacity(0.72))
-                .frame(width: 196, height: 196)
+                .stroke(.blue.opacity(0.55), lineWidth: 1.5)
+                .frame(width: 220, height: 220)
+            Circle()
+                .fill(Color(red: 0.05, green: 0.06, blue: 0.16))
+                .frame(width: 200, height: 200)
 
             VStack(spacing: 2) {
                 Text("LIVE FORCE")
@@ -191,4 +187,3 @@ struct LiveReadingView: View {
         LiveReadingView(deviceVM: vm)
     }
 }
-

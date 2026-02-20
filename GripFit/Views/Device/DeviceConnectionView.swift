@@ -3,7 +3,6 @@ import SwiftUI
 struct DeviceConnectionView: View {
     @Environment(AuthViewModel.self) private var authVM
     @State private var deviceVM: DeviceViewModel
-    @State private var showLiveReading: Bool = false
 
     init(deviceManager: GripDeviceProtocol) {
         _deviceVM = State(initialValue: DeviceViewModel(deviceManager: deviceManager))
@@ -11,37 +10,12 @@ struct DeviceConnectionView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                ModernScreenBackground()
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: AppConstants.UI.sectionSpacing) {
-                        header
-                        Group {
-                            switch deviceVM.connectionState {
-                            case .disconnected:
-                                disconnectedView
-                            case .scanning:
-                                scanningView
-                            case .connecting:
-                                connectingView
-                            case .connected(let deviceName):
-                                connectedView(deviceName: deviceName)
-                            case .error(let message):
-                                errorView(message: message)
-                            }
-                        }
-                    }
-                    .padding(.bottom, 24)
+            Group {
+                if deviceVM.connectionState.isConnected {
+                    LiveReadingView(deviceVM: deviceVM)
+                } else {
+                    connectionView
                 }
-                .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
-                .padding(.top, 10)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle("")
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .navigationDestination(isPresented: $showLiveReading) {
-                LiveReadingView(deviceVM: deviceVM)
             }
             .task {
                 if let userId = authVM.currentUserId {
@@ -52,6 +26,40 @@ struct DeviceConnectionView: View {
                 deviceVM.stopStateSync()
             }
         }
+    }
+
+    // MARK: - Connection View
+
+    private var connectionView: some View {
+        ZStack {
+            ModernScreenBackground()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: AppConstants.UI.sectionSpacing) {
+                    header
+                    Group {
+                        switch deviceVM.connectionState {
+                        case .disconnected:
+                            disconnectedView
+                        case .scanning:
+                            scanningView
+                        case .connecting:
+                            connectingView
+                        case .connected:
+                            EmptyView()
+                        case .error(let message):
+                            errorView(message: message)
+                        }
+                    }
+                }
+                .padding(.bottom, 24)
+            }
+            .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+            .padding(.top, 10)
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("")
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     // MARK: - Header
@@ -174,54 +182,6 @@ struct DeviceConnectionView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
-        }
-    }
-
-    // MARK: - Connected
-
-    private func connectedView(deviceName: String) -> some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(deviceName)
-                            .font(.headline.weight(.semibold))
-                        Text("BLE active · Signal strong")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Text("84%")
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.white.opacity(0.1), in: Capsule())
-                }
-
-                bluetoothCircle
-
-                Text("Ready")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-
-                Button {
-                    showLiveReading = true
-                } label: {
-                    Text("Start Grip Test")
-                }
-                .buttonStyle(ModernPrimaryButtonStyle())
-
-                Button(role: .destructive) {
-                    deviceVM.disconnect()
-                } label: {
-                    Text("Disconnect")
-                        .font(.subheadline.weight(.medium))
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.red.opacity(0.85))
-            }
         }
     }
 

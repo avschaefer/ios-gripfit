@@ -93,18 +93,14 @@ final class DeviceViewModel {
                 synced: false
             )
 
-            // Save to Firestore
             do {
                 try await databaseService.saveRecording(finalRecording)
                 finalRecording.synced = true
                 lastRecording = finalRecording
-                showRecordingSaved = true
             } catch {
                 errorMessage = "Failed to save recording: \(error.localizedDescription)"
                 showError = true
-                // Still keep the recording locally
                 lastRecording = finalRecording
-                showRecordingSaved = true
             }
         }
 

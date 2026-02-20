@@ -167,6 +167,15 @@ final class DatabaseService {
         }
     }
 
+    func updateDisplayName(userId: String, name: String) async throws {
+        guard !userId.isEmpty else { return }
+        do {
+            try await db.collection("users").document(userId).updateData(["displayName": name])
+        } catch {
+            throw DatabaseError.unknown("Failed to update display name: \(error.localizedDescription)")
+        }
+    }
+
     func updateUserPreferences(userId: String, unit: ForceUnit, hand: Hand) async throws {
         let data: [String: Any] = [
             "preferredUnit": unit.rawValue,
