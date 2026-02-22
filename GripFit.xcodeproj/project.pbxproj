@@ -46,6 +46,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		566E03D02F4B6A2D009FC28F /* GripFit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GripFit.entitlements; sourceTree = "<group>"; };
 		AB000001 /* GripFitApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GripFitApp.swift; sourceTree = "<group>"; };
 		AB000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AB000003 /* GripRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GripRecording.swift; sourceTree = "<group>"; };
@@ -108,6 +109,7 @@
 		AE000002 /* GripFit */ = {
 			isa = PBXGroup;
 			children = (
+				566E03D02F4B6A2D009FC28F /* GripFit.entitlements */,
 				AB000001 /* GripFitApp.swift */,
 				AB000002 /* ContentView.swift */,
 				AB000033 /* Info.plist */,
@@ -488,6 +490,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GripFit/GripFit.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -521,6 +524,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GripFit/GripFit.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

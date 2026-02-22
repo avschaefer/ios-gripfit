@@ -386,6 +386,11 @@ struct SettingsView: View {
                 Text("About")
                     .font(.headline)
 
+                NavigationLink(destination: ReadinessAboutView()) {
+                    aboutRow(icon: "heart.text.square", title: "Grip & Readiness")
+                }
+                .buttonStyle(.plain)
+
                 NavigationLink(destination: PrivacyPolicyView()) {
                     aboutRow(icon: "shield", title: "Privacy")
                 }
@@ -731,6 +736,88 @@ struct SettingsView: View {
         }
 
         root.present(activityVC, animated: true)
+    }
+}
+
+// MARK: - Readiness About View
+
+struct ReadinessAboutView: View {
+    var body: some View {
+        ZStack {
+            ModernScreenBackground()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("Grip & Readiness")
+                        .font(.title.weight(.bold))
+
+                    topicCard(
+                        icon: "hand.raised.fill",
+                        title: "Why Grip Strength Matters",
+                        body: "Grip strength is one of the most reliable biomarkers of overall health. Research links it to cardiovascular fitness, muscular endurance, and longevity. A stronger grip correlates with lower all-cause mortality risk and better functional independence as you age."
+                    )
+
+                    topicCard(
+                        icon: "brain.head.profile",
+                        title: "Grip & Nervous System Readiness",
+                        body: "Your grip force output is governed by the central nervous system. When you're fatigued, under-recovered, or stressed, your peak grip strength drops measurably — often before you feel it. Tracking daily grip force gives you an objective window into neuromuscular readiness."
+                    )
+
+                    topicCard(
+                        icon: "gauge.with.dots.needle.33percent",
+                        title: "How Readiness Is Calculated",
+                        body: "Your Readiness score (0–100) combines three factors:\n\n• Performance (50%) — How your recent average compares to your all-time peak.\n• Consistency (40%) — How many days in the selected window you tested.\n• Trend (10%) — Whether today's best exceeds your recent average.\n\nA score above 80 suggests you're well-recovered. Below 40 may indicate accumulated fatigue."
+                    )
+
+                    topicCard(
+                        icon: "arrow.triangle.2.circlepath",
+                        title: "Using Readiness Day-to-Day",
+                        body: "Test first thing in the morning before training. Compare your score to your personal baseline over the past week. If readiness is trending down, consider lighter training, more sleep, or a recovery day. A rising trend means your body is adapting well."
+                    )
+
+                    topicCard(
+                        icon: "scalemass",
+                        title: "Strength Balance",
+                        body: "A large imbalance between left and right grip strength can indicate asymmetric fatigue, injury risk, or compensation patterns. Aim for less than 10% difference between hands. The Strength Balance card on your dashboard tracks this automatically."
+                    )
+
+                    topicCard(
+                        icon: "chart.line.uptrend.xyaxis",
+                        title: "Long-Term Tracking",
+                        body: "Grip strength improves with consistent training. Use the timeline controls on your dashboard chart to observe weekly, monthly, and yearly trends. Small, steady gains in peak force are a strong signal of improving overall fitness."
+                    )
+                }
+                .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+                .padding(.top, 10)
+                .padding(.bottom, 24)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("")
+        .toolbarBackground(.hidden, for: .navigationBar)
+    }
+
+    private func topicCard(icon: String, title: String, body: String) -> some View {
+        ModernCard {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(.blue.opacity(0.14))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.blue)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                    Text(body)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 }
 

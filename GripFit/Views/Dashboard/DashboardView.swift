@@ -158,7 +158,7 @@ struct DashboardView: View {
         let score = dashboardVM.readinessScore
         let fraction = Double(score) / 100.0
 
-        return VStack(alignment: .trailing, spacing: 6) {
+        return VStack(spacing: 6) {
             Text("READINESS")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -166,21 +166,21 @@ struct DashboardView: View {
 
             ZStack {
                 Circle()
-                    .stroke(.white.opacity(0.08), lineWidth: 7)
+                    .stroke(.white.opacity(0.08), lineWidth: 6)
 
                 Circle()
                     .trim(from: 0, to: fraction)
                     .stroke(
                         readinessGradient(for: score),
-                        style: StrokeStyle(lineWidth: 7, lineCap: .round)
+                        style: StrokeStyle(lineWidth: 6, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
 
                 Text("\(score)")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
                     .foregroundStyle(readinessColor(for: score))
             }
-            .frame(width: 88, height: 88)
+            .frame(width: 72, height: 72)
         }
     }
 
