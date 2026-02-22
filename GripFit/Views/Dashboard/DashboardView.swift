@@ -6,6 +6,7 @@ struct DashboardView: View {
     @State private var dashboardVM = DashboardViewModel()
     @State private var selectedRecording: GripRecording?
     @State private var showAllSessions = false
+    @State private var showDeleteAllConfirmation = false
 
     private var unit: ForceUnit {
         SettingsViewModel.currentUnit()
@@ -268,20 +269,36 @@ struct DashboardView: View {
                 }
 
                 GeometryReader { geo in
-                    ZStack(alignment: .leading) {
+                    let barWidth = geo.size.width
+                    let center = barWidth / 2
+                    let halfBar = barWidth / 2
+                    let diffFraction = min(Double(diff) / 100.0, 1.0)
+                    let fillWidth = diffFraction * halfBar
+                    let leftDominant = leftAvg >= rightAvg
+
+                    ZStack {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(.white.opacity(0.08))
                             .frame(height: 8)
 
-                        RoundedRectangle(cornerRadius: 4)
+                        Rectangle()
+                            .fill(.white.opacity(0.25))
+                            .frame(width: 2, height: 14)
+                            .position(x: center, y: 4)
+
+                        RoundedRectangle(cornerRadius: 3)
                             .fill(
                                 LinearGradient(
-                                    colors: [.blue, .cyan],
+                                    colors: leftDominant ? [.cyan, .blue] : [.blue, .cyan],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
-                            .frame(width: max(0, geo.size.width * ratio), height: 8)
+                            .frame(width: max(0, fillWidth), height: 8)
+                            .position(
+                                x: leftDominant ? center - fillWidth / 2 : center + fillWidth / 2,
+                                y: 4
+                            )
                     }
                 }
                 .frame(height: 8)
@@ -466,7 +483,7 @@ struct DashboardView: View {
                     Text("Recent Sessions")
                         .font(.headline)
                     Spacer()
-                    if dashboardVM.hasMoreRecordings {
+                    if dashboardVM.hasRecordings {
                         Button {
                             showAllSessions = true
                         } label: {
@@ -568,40 +585,63 @@ struct DashboardView: View {
     // MARK: - All Sessions View
 
     private var allSessionsView: some View {
-        ZStack {
-            ModernScreenBackground()
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: AppConstants.UI.sectionSpacing) {
-                    ModernCard {
-                        VStack(alignment: .leading, spacing: 0) {
-                            tableHeader
-
-                            Divider().overlay(.white.opacity(0.08))
-
-                            let sorted = dashboardVM.recordings.sorted { $0.timestamp > $1.timestamp }
-                            ForEach(sorted, id: \.id) { recording in
-                                tableRow(recording)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        selectedRecording = recording
-                                    }
-
-                                if recording.id != sorted.last?.id {
-                                    Divider().overlay(.white.opacity(0.05))
-                                }
-                            }
+        List {
+            Section {
+                let sorted = dashboardVM.recordings.sorted { $0.timestamp > $1.timestamp }
+                ForEach(sorted, id: \.id) { recording in
+                    tableRow(recording)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            selectedRecording = recording
+                        }
+                        .listRowBackground(Color.white.opacity(0.05))
+                }
+                .onDelete { offsets in
+                    let sorted = dashboardVM.recordings.sorted { $0.timestamp > $1.timestamp }
+                    for index in offsets {
+                        let recording = sorted[index]
+                        Task {
+                            await dashboardVM.deleteRecording(recording)
                         }
                     }
                 }
-                .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
-                .padding(.top, 10)
-                .padding(.bottom, 24)
+            } header: {
+                tableHeader
+                    .textCase(nil)
+            }
+
+            Section {
+                Button(role: .destructive) {
+                    showDeleteAllConfirmation = true
+                } label: {
+                    HStack {
+                        Image(systemName: "trash")
+                        Text("Delete All Sessions")
+                    }
+                    .font(.subheadline.weight(.medium))
+                    .frame(maxWidth: .infinity)
+                }
+                .listRowBackground(Color.red.opacity(0.12))
             }
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background { ModernScreenBackground() }
         .navigationTitle("All Sessions")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .alert("Delete All Sessions", isPresented: $showDeleteAllConfirmation) {
+            Button("Delete All", role: .destructive) {
+                Task {
+                    if let userId = authVM.currentUserId {
+                        await dashboardVM.deleteAllRecordings(userId: userId)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete all recorded sessions. This action is irreversible and cannot be undone.")
+        }
     }
 
     // MARK: - Helpers

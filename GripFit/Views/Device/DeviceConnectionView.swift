@@ -117,9 +117,7 @@ struct DeviceConnectionView: View {
                 VStack(spacing: 12) {
                     ProgressView()
                         .scaleEffect(1.2)
-                        .tint(.blue)
-                    Text("Scanning for devices...")
-                        .font(.headline)
+                        .tint(.orange)
                     ConnectionStatusBadge(state: .scanning)
                 }
                 .frame(maxWidth: .infinity)

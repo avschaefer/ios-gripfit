@@ -903,8 +903,10 @@ struct InstructionsView: View {
                     Text(body)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

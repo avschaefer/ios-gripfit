@@ -267,5 +267,22 @@ final class DashboardViewModel {
             showError = true
         }
     }
+
+    func deleteAllRecordings(userId: String) async {
+        let toDelete = recordings
+        for recording in toDelete {
+            do {
+                try await databaseService.deleteRecording(
+                    userId: recording.userId,
+                    recordingId: recording.id.uuidString
+                )
+                recordings.removeAll { $0.id == recording.id }
+            } catch {
+                errorMessage = error.localizedDescription
+                showError = true
+                return
+            }
+        }
+    }
 }
 

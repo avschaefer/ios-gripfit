@@ -56,25 +56,16 @@ struct RecordingDetailView: View {
     // MARK: - Sections
 
     private var headerSection: some View {
-        VStack(spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(viewModel.formattedDate)
-                        .font(.headline)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(viewModel.formattedDate)
+                .font(.headline)
 
-                    HStack(spacing: 12) {
-                        Label(viewModel.recording.hand.displayName + " Hand", systemImage: handIcon)
-                        Label(viewModel.formattedDuration, systemImage: AppConstants.Icons.clock)
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                ConnectionStatusBadge(state: .connected(deviceName: viewModel.recording.hand.displayName))
-            }
+            ModernPillBadge(
+                text: viewModel.recording.hand.displayName + " Hand",
+                tone: .positive
+            )
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background {
             RoundedRectangle(cornerRadius: 12)
