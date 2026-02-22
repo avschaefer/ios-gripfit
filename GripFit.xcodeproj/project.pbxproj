@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		566E03D22F4BBA2D009FC28F /* GripFit.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 566E03D12F4BBA2D009FC28F /* GripFit.storekit */; };
 		AA000001 /* GripFitApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000001 /* GripFitApp.swift */; };
 		AA000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000002 /* ContentView.swift */; };
 		AA000003 /* GripRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000003 /* GripRecording.swift */; };
@@ -33,7 +34,6 @@
 		AA000024 /* BLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000024 /* BLEManager.swift */; };
 		AA000025 /* MockBLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000025 /* MockBLEManager.swift */; };
 		AA000026 /* BLEConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000026 /* BLEConstants.swift */; };
-		AA000037 /* BLEMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000037 /* BLEMessageParser.swift */; };
 		AA000027 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000027 /* AuthService.swift */; };
 		AA000028 /* DatabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000028 /* DatabaseService.swift */; };
 		AA000029 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000029 /* Constants.swift */; };
@@ -44,10 +44,12 @@
 		AA000034 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = AD000001 /* FirebaseAuth */; };
 		AA000035 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = AD000002 /* FirebaseFirestore */; };
 		AA000036 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = AD000003 /* GoogleSignIn */; };
+		AA000037 /* BLEMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000037 /* BLEMessageParser.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		566E03D02F4B6A2D009FC28F /* GripFit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GripFit.entitlements; sourceTree = "<group>"; };
+		566E03D12F4BBA2D009FC28F /* GripFit.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = GripFit.storekit; sourceTree = "<group>"; };
 		AB000001 /* GripFitApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GripFitApp.swift; sourceTree = "<group>"; };
 		AB000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AB000003 /* GripRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GripRecording.swift; sourceTree = "<group>"; };
@@ -74,7 +76,6 @@
 		AB000024 /* BLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEManager.swift; sourceTree = "<group>"; };
 		AB000025 /* MockBLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBLEManager.swift; sourceTree = "<group>"; };
 		AB000026 /* BLEConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConstants.swift; sourceTree = "<group>"; };
-		AB000037 /* BLEMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEMessageParser.swift; sourceTree = "<group>"; };
 		AB000027 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		AB000028 /* DatabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseService.swift; sourceTree = "<group>"; };
 		AB000029 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
@@ -83,6 +84,7 @@
 		AB000032 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AB000033 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AB000034 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		AB000037 /* BLEMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEMessageParser.swift; sourceTree = "<group>"; };
 		AB000050 /* GripFit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GripFit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -113,6 +115,7 @@
 			children = (
 				566E03D02F4B6A2D009FC28F /* GripFit.entitlements */,
 				AB000001 /* GripFitApp.swift */,
+				566E03D12F4BBA2D009FC28F /* GripFit.storekit */,
 				AB000002 /* ContentView.swift */,
 				AB000033 /* Info.plist */,
 				AB000034 /* GoogleService-Info.plist */,
@@ -324,6 +327,7 @@
 			files = (
 				AA000032 /* Assets.xcassets in Resources */,
 				AA000033 /* GoogleService-Info.plist in Resources */,
+				566E03D22F4BBA2D009FC28F /* GripFit.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -56,3 +56,12 @@ enum AppConstants {
     }
 }
 
+enum AppConfig {
+    /// Set to `true` during product-market fit testing.
+    /// When true, all Pro features are unlocked for all users regardless of subscription status.
+    /// Set to `false` when ready to enforce paywall.
+    static let bypassSubscription = true
+
+    static let freeRecordingLimit = 5
+}
+

@@ -121,6 +121,7 @@ struct TermsOfServiceView: View {
 
 struct SettingsView: View {
     @Environment(AuthViewModel.self) private var authVM
+    @Environment(SubscriptionService.self) private var subscriptionService
     @State private var settingsVM = SettingsViewModel()
     @State private var showEditProfile = false
     @State private var editName = ""
@@ -130,7 +131,17 @@ struct SettingsView: View {
     @State private var feedbackMessage = ""
     @State private var showFeedbackSentAlert = false
     @State private var showMailUnavailableAlert = false
-    @State private var showSubscription = false
+    @State private var showPaywall = false
+    @State private var showReferralCodeEntry = false
+    @State private var referralCodeInput = ""
+    @State private var showOfferCodeRedemption = false
+    @State private var referralCode: String = ""
+    @State private var referralPending: Int = 0
+    @State private var referralRedeemed: Int = 0
+    @State private var referredBy: String?
+    @State private var referralError: String?
+    @State private var showReferralError = false
+    @State private var showReferralSuccess = false
 
     var body: some View {
         NavigationStack {
@@ -141,6 +152,8 @@ struct SettingsView: View {
                     VStack(spacing: AppConstants.UI.sectionSpacing) {
                         header
                         profileSection
+                        SubscriptionStatusView(showPaywall: $showPaywall)
+                        referralSection
                         instructionsSection
                         readinessInfoSection
                         preferencesSection
@@ -162,6 +175,7 @@ struct SettingsView: View {
                     displayName: authVM.currentUserDisplayName,
                     email: authVM.currentUserEmail
                 )
+                await loadReferralData()
             }
             .sheet(isPresented: $showEditProfile) {
                 editProfileSheet
@@ -191,9 +205,13 @@ struct SettingsView: View {
             .sheet(isPresented: $showFeedbackSheet) {
                 feedbackSheet
             }
-            .sheet(isPresented: $showSubscription) {
-                subscriptionView
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
             }
+            .sheet(isPresented: $showReferralCodeEntry) {
+                referralCodeEntrySheet
+            }
+            .offerCodeRedemption(isPresented: $showOfferCodeRedemption)
             .alert("Feedback Sent", isPresented: $showFeedbackSentAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -203,6 +221,16 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text("Please email us directly at support@gripfit.app")
+            }
+            .alert("Referral Error", isPresented: $showReferralError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(referralError ?? "Something went wrong.")
+            }
+            .alert("Referral Applied", isPresented: $showReferralSuccess) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Referral code applied successfully!")
             }
         }
     }
@@ -373,27 +401,13 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Actions (Refer, Subscription, Feedback)
+    // MARK: - Actions
 
     private var actionsSection: some View {
         ModernCard {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Actions")
                     .font(.headline)
-
-                Button {
-                    shareApp()
-                } label: {
-                    aboutRow(icon: "person.2", title: "Refer a Friend")
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    showSubscription = true
-                } label: {
-                    aboutRow(icon: "crown", title: "Subscription")
-                }
-                .buttonStyle(.plain)
 
                 Button {
                     showFeedbackSheet = true
@@ -685,77 +699,187 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Subscription View
+    // MARK: - Referral Section
 
-    private var subscriptionView: some View {
+    private var referralSection: some View {
+        ModernCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Referrals")
+                    .font(.headline)
+
+                if !referralCode.isEmpty {
+                    HStack {
+                        Text("Your Code")
+                            .font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Text(referralCode)
+                            .font(.system(.body, design: .monospaced))
+                            .bold()
+                    }
+                    .padding(12)
+                    .background(
+                        .white.opacity(0.06),
+                        in: RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                    )
+
+                    ShareLink(
+                        item: URL(string: "https://gripfit.app/invite/\(referralCode)")!,
+                        subject: Text("Try GripFit"),
+                        message: Text("Track your grip strength! Use my code \(referralCode) for a free month.")
+                    ) {
+                        HStack {
+                            Label("Share Referral Link", systemImage: "square.and.arrow.up")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary.opacity(0.9))
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(12)
+                        .background(
+                            .white.opacity(0.06),
+                            in: RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if referredBy == nil {
+                    Button {
+                        referralCodeInput = ""
+                        showReferralCodeEntry = true
+                    } label: {
+                        aboutRow(icon: "person.badge.plus", title: "Enter Referral Code")
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if referralPending > 0 {
+                    Button {
+                        showOfferCodeRedemption = true
+                    } label: {
+                        HStack {
+                            Label("Redeem Reward (\(referralPending) free month\(referralPending == 1 ? "" : "s"))", systemImage: "gift.fill")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.green)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(12)
+                        .background(
+                            .green.opacity(0.08),
+                            in: RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                let totalReferred = referralPending + referralRedeemed
+                if totalReferred > 0 {
+                    Text("Friends referred: \(totalReferred)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 12)
+                }
+            }
+        }
+    }
+
+    // MARK: - Referral Code Entry Sheet
+
+    private var referralCodeEntrySheet: some View {
         NavigationStack {
             ZStack {
                 ModernScreenBackground()
 
-                VStack(spacing: 24) {
-                    Spacer()
-
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 56))
-                        .foregroundStyle(.yellow)
-
-                    Text("GripFit Pro")
-                        .font(.title.weight(.bold))
-
-                    Text("Unlock advanced analytics, unlimited history, and more.")
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Enter the referral code shared by a friend.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+
+                    TextField("e.g. GRIP-A7X2", text: $referralCodeInput)
+                        .textFieldStyle(.plain)
+                        .autocapitalization(.allCharacters)
+                        .autocorrectionDisabled()
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                                .fill(.white.opacity(0.07))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                                .stroke(.white.opacity(0.14), lineWidth: 1)
+                        )
 
                     Button {
-                        // Subscription managed via Apple StoreKit
+                        Task {
+                            await submitReferralCode()
+                        }
                     } label: {
-                        Text("View Plans")
+                        Text("Apply Code")
                     }
                     .buttonStyle(ModernPrimaryButtonStyle())
-                    .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
-
-                    Button("Restore Purchases") {
-                        // StoreKit restore
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.blue.opacity(0.85))
+                    .disabled(referralCodeInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                     Spacer()
                 }
+                .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+                .padding(.top, 20)
             }
-            .navigationTitle("Subscription")
+            .navigationTitle("Referral Code")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        showSubscription = false
+                    Button("Cancel") {
+                        showReferralCodeEntry = false
                     }
                     .foregroundStyle(.secondary)
                 }
             }
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium])
     }
 
-    // MARK: - Share / Refer
+    // MARK: - Referral Data
 
-    private func shareApp() {
-        let message = "Check out GripFit — track your grip strength! https://apps.apple.com/app/gripfit"
-        let activityVC = UIActivityViewController(activityItems: [message], applicationActivities: nil)
+    private func loadReferralData() async {
+        guard let userId = authVM.currentUserId else { return }
+        let service = ReferralService.shared
 
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let root = scene.windows.first?.rootViewController else { return }
-
-        if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = root.view
-            popover.sourceRect = CGRect(x: root.view.bounds.midX, y: root.view.bounds.midY, width: 0, height: 0)
-            popover.permittedArrowDirections = []
+        if let code = try? await service.fetchReferralCode(userId: userId) {
+            referralCode = code
+        } else {
+            let newCode = service.generateReferralCode()
+            try? await service.saveReferralCode(userId: userId, code: newCode)
+            referralCode = newCode
         }
 
-        root.present(activityVC, animated: true)
+        if let stats = try? await service.fetchReferralStats(userId: userId) {
+            referralPending = stats.pending
+            referralRedeemed = stats.redeemed
+            referredBy = stats.referredBy
+        }
+    }
+
+    private func submitReferralCode() async {
+        guard let userId = authVM.currentUserId else { return }
+        let trimmed = referralCodeInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        do {
+            try await ReferralService.shared.recordReferral(refereeUserId: userId, referrerCode: trimmed)
+            showReferralCodeEntry = false
+            showReferralSuccess = true
+            await loadReferralData()
+        } catch {
+            referralError = error.localizedDescription
+            showReferralError = true
+        }
     }
 }
 
@@ -914,5 +1038,6 @@ struct InstructionsView: View {
 #Preview {
     SettingsView()
         .environment(AuthViewModel())
+        .environment(SubscriptionService())
         .preferredColorScheme(.dark)
 }

@@ -1,0 +1,39 @@
+---
+description: StoreKit 2 subscription implementation rules
+globs: ["**/Services/Subscription/**/*.swift", "**/ViewModels/SubscriptionViewModel.swift", "**/Views/Subscription/**/*.swift"]
+alwaysApply: false
+---
+
+# Subscription Rules
+
+## StoreKit 2 Only
+- Use StoreKit 2 APIs exclusively (Product, Transaction, etc.)
+- Do NOT use StoreKit 1 APIs (SKProduct, SKPaymentQueue, etc.)
+- Do NOT use any third-party subscription SDK (RevenueCat, Adapty, etc.)
+
+## Source of Truth
+- StoreKit (Transaction.currentEntitlements) is the SOURCE OF TRUTH for subscription status
+- Firebase is the ANALYTICS MIRROR — always sync after checking StoreKit, never the reverse
+- Never grant Pro access based solely on Firebase data — always verify with StoreKit first
+
+## Bypass Flag
+- All feature gating must respect AppConfig.bypassSubscription
+- Pattern: `AppConfig.bypassSubscription || subscriptionService.subscriptionState.isActive`
+- This flag ships as `true` during product-market fit testing
+
+## Offer Codes
+- Use Apple's offer code system for referral rewards — do NOT build custom billing
+- Use .offerCodeRedemption SwiftUI modifier for in-app redemption
+- Detect offer code usage via transaction.offerType == .code
+
+## Subscription UI
+- Always show "Restore Purchases" option on paywall (Apple requires this)
+- Use SubscriptionStoreView for MVP paywall (Apple's built-in SwiftUI view)
+- Always include links to Privacy Policy and Terms of Service on paywall
+- "Manage Subscription" should open Apple's subscription management URL
+- Never show subscription price without using product.displayPrice (handles localization)
+
+## Testing
+- Use StoreKit Configuration File for all local development
+- Use Debug > StoreKit > Manage Transactions to simulate lifecycle events
+- Test: purchase, renewal, cancellation, expiration, offer code redemption, restore
