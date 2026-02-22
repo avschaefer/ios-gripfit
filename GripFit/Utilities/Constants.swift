@@ -33,6 +33,7 @@ enum AppConstants {
     enum UserDefaultsKeys {
         static let preferredUnit = "preferredUnit"
         static let dominantHand = "dominantHand"
+        static let readinessTimeframe = "readinessTimeframe"
     }
 
     enum ErrorMessages {

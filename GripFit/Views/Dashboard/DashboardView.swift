@@ -74,7 +74,9 @@ struct DashboardView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppConstants.UI.sectionSpacing) {
                 header
+                handFilterPicker
                 statsSection
+                balanceAndStreakRow
                 recentSessionsCard
             }
             .padding(.bottom, 20)
@@ -86,31 +88,39 @@ struct DashboardView: View {
     private var statsSection: some View {
         ModernCard {
             VStack(alignment: .leading, spacing: 16) {
-                Text("TODAY'S BEST")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .tracking(1)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("TODAY'S BEST")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .tracking(1)
 
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(String(format: "%.0f", unit.convert(dashboardVM.todaysBest)))
-                        .font(.system(size: 52, weight: .bold, design: .rounded))
-                        .contentTransition(.numericText())
-                    Text(unit.abbreviation)
-                        .font(.title3.weight(.medium))
-                        .foregroundStyle(.secondary)
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text(String(format: "%.0f", unit.convert(dashboardVM.todaysBest)))
+                                .font(.system(size: 52, weight: .bold, design: .rounded))
+                                .contentTransition(.numericText())
+                            Text(unit.abbreviation)
+                                .font(.title3.weight(.medium))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        if let hand = dashboardVM.todaysBestHand {
+                            Text("\(hand.displayName) Hand · \(dashboardVM.todaysTestCount) test\(dashboardVM.todaysTestCount == 1 ? "" : "s")")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("No tests today")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Spacer()
+
+                    readinessRing
                 }
 
-                if let hand = dashboardVM.todaysBestHand {
-                    Text("\(hand.displayName) Hand · \(dashboardVM.todaysTestCount) test\(dashboardVM.todaysTestCount == 1 ? "" : "s")")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("No tests today")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                weeklyChart
+                chartSection
 
                 Divider()
                     .overlay(.white.opacity(0.08))
@@ -132,23 +142,226 @@ struct DashboardView: View {
                         unit: unit.abbreviation
                     )
                     summaryMetric(
-                        title: "Increase",
-                        value: increaseText,
+                        title: "Change",
+                        value: changeText,
                         unit: nil,
-                        color: increaseColor
+                        color: changeColor
                     )
                 }
             }
         }
     }
 
-    // MARK: - 7-Day Line Chart
+    // MARK: - Readiness Ring
 
-    private var weeklyChart: some View {
-        let data = dashboardVM.sevenDayAverages
+    private var readinessRing: some View {
+        let score = dashboardVM.readinessScore
+        let fraction = Double(score) / 100.0
+
+        return VStack(alignment: .trailing, spacing: 6) {
+            Text("READINESS")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .tracking(1)
+
+            ZStack {
+                Circle()
+                    .stroke(.white.opacity(0.08), lineWidth: 7)
+
+                Circle()
+                    .trim(from: 0, to: fraction)
+                    .stroke(
+                        readinessGradient(for: score),
+                        style: StrokeStyle(lineWidth: 7, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+
+                Text("\(score)")
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .foregroundStyle(readinessColor(for: score))
+            }
+            .frame(width: 88, height: 88)
+        }
+    }
+
+    private func readinessColor(for score: Int) -> Color {
+        switch score {
+        case 80...100: return .green
+        case 60..<80: return .yellow
+        case 40..<60: return .orange
+        default: return .red
+        }
+    }
+
+    private func readinessGradient(for score: Int) -> AngularGradient {
+        let color = readinessColor(for: score)
+        return AngularGradient(
+            colors: [color.opacity(0.6), color],
+            center: .center,
+            startAngle: .degrees(0),
+            endAngle: .degrees(360 * Double(score) / 100)
+        )
+    }
+
+    // MARK: - Hand Filter
+
+    private var handFilterPicker: some View {
+        HStack(spacing: 0) {
+            handFilterButton(label: "All", hand: nil)
+            handFilterButton(label: "Left", hand: .left)
+            handFilterButton(label: "Right", hand: .right)
+        }
+        .padding(3)
+        .background(
+            Capsule().fill(.white.opacity(0.06))
+        )
+    }
+
+    private func handFilterButton(label: String, hand: Hand?) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dashboardVM.handFilter = hand
+            }
+        } label: {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(dashboardVM.handFilter == hand ? .white : .secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(
+                    dashboardVM.handFilter == hand
+                        ? Capsule().fill(.white.opacity(0.12))
+                        : nil
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Strength Balance & Streak
+
+    private var balanceAndStreakRow: some View {
+        HStack(spacing: 12) {
+            strengthBalanceCard
+            streakCard
+        }
+    }
+
+    private var strengthBalanceCard: some View {
+        let leftAvg = dashboardVM.leftBestAverage
+        let rightAvg = dashboardVM.rightBestAverage
+        let ratio = dashboardVM.balanceRatio
+        let diff = dashboardVM.balanceDifferencePercent
+
+        return ModernCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Strength Balance")
+                    .font(.caption.weight(.semibold))
+
+                HStack {
+                    Text("Left")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("Right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(.white.opacity(0.08))
+                            .frame(height: 8)
+
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: [.blue, .cyan],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: max(0, geo.size.width * ratio), height: 8)
+                    }
+                }
+                .frame(height: 8)
+
+                HStack {
+                    Text(String(format: "%.1f", unit.convert(leftAvg)))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                    Text(unit.abbreviation)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(String(format: "%.1f", unit.convert(rightAvg)))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                    Text(unit.abbreviation)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                if diff > 0 {
+                    Text("\(diff)% difference")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule().fill(.orange.opacity(0.15))
+                        )
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+        }
+    }
+
+    private var streakCard: some View {
+        let streak = dashboardVM.weekStreak
+        let count = dashboardVM.streakDaysCount
+
+        return ModernCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Streak")
+                    .font(.caption.weight(.semibold))
+
+                HStack(spacing: 6) {
+                    ForEach(Array(streak.enumerated()), id: \.offset) { _, day in
+                        Circle()
+                            .fill(day.hasSession ? .cyan : .white.opacity(0.12))
+                            .frame(width: 12, height: 12)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                HStack(spacing: 6) {
+                    ForEach(Array(streak.enumerated()), id: \.offset) { _, day in
+                        Text(day.label)
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 12)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                Text("\(count) of 7 days")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("This Week")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+    }
+
+    // MARK: - Chart with Timeline
+
+    private var chartSection: some View {
+        let data = dashboardVM.chartAverages
         let hasData = data.contains { $0.average > 0 }
 
-        return VStack(alignment: .leading, spacing: 6) {
+        return VStack(spacing: 8) {
             if hasData {
                 Chart(data) { day in
                     LineMark(
@@ -188,10 +401,14 @@ struct DashboardView: View {
                     )
                 }
                 .chartXAxis {
-                    AxisMarks { value in
-                        AxisValueLabel()
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                    let count = data.count
+                    let stride = count > 8 ? max(1, count / 6) : 1
+                    AxisMarks(values: .automatic) { value in
+                        if value.index % stride == 0 {
+                            AxisValueLabel()
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .chartYAxis(.hidden)
@@ -207,7 +424,37 @@ struct DashboardView: View {
                             .foregroundStyle(.tertiary)
                     }
             }
+
+            chartTimeRangePicker
         }
+    }
+
+    private var chartTimeRangePicker: some View {
+        HStack(spacing: 0) {
+            ForEach(ChartTimeRange.allCases, id: \.self) { range in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        dashboardVM.chartTimeRange = range
+                    }
+                } label: {
+                    Text(range.displayName)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(dashboardVM.chartTimeRange == range ? .white : .secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            dashboardVM.chartTimeRange == range
+                                ? Capsule().fill(.white.opacity(0.12))
+                                : nil
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(
+            Capsule().fill(.white.opacity(0.06))
+        )
     }
 
     // MARK: - Recent Sessions Card
@@ -376,14 +623,14 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var increaseText: String {
-        guard let pct = dashboardVM.increasePercent else { return "--" }
+    private var changeText: String {
+        guard let pct = dashboardVM.changePercent else { return "--" }
         let sign = pct >= 0 ? "+" : ""
         return "\(sign)\(Int(pct))%"
     }
 
-    private var increaseColor: Color {
-        guard let pct = dashboardVM.increasePercent else { return .secondary }
+    private var changeColor: Color {
+        guard let pct = dashboardVM.changePercent else { return .secondary }
         return pct >= 0 ? .green : .red.opacity(0.85)
     }
 

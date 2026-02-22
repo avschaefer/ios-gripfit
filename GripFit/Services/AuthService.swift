@@ -3,6 +3,8 @@ import UIKit
 import FirebaseCore
 import FirebaseAuth
 import GoogleSignIn
+import AuthenticationServices
+import CryptoKit
 
 enum AuthError: LocalizedError {
     case invalidEmail
@@ -13,6 +15,7 @@ enum AuthError: LocalizedError {
     case networkError
     case missingGoogleClientID
     case missingIDToken
+    case appleSignInFailed
     case unknown(String)
 
     var errorDescription: String? {
@@ -33,6 +36,8 @@ enum AuthError: LocalizedError {
             return "Google Sign-In is not configured correctly for this app."
         case .missingIDToken:
             return "Google Sign-In could not retrieve an identity token."
+        case .appleSignInFailed:
+            return "Apple Sign-In was cancelled or failed."
         case .unknown(let message):
             return message
         }
@@ -131,6 +136,58 @@ final class AuthService {
         } catch {
             throw AuthError.from(error)
         }
+    }
+
+    // MARK: - Apple Sign-In
+
+    private var currentNonce: String?
+
+    func startAppleSignIn() -> (nonce: String, hashedNonce: String) {
+        let nonce = randomNonceString()
+        currentNonce = nonce
+        return (nonce, sha256(nonce))
+    }
+
+    func signInWithApple(idToken: String, rawNonce: String, fullName: PersonNameComponents?) async throws -> String {
+        let credential = OAuthProvider.appleCredential(
+            withIDToken: idToken,
+            rawNonce: rawNonce,
+            fullName: fullName
+        )
+
+        do {
+            let authResult = try await Auth.auth().signIn(with: credential)
+
+            if let name = fullName, authResult.additionalUserInfo?.isNewUser == true {
+                let displayName = [name.givenName, name.familyName].compactMap { $0 }.joined(separator: " ")
+                if !displayName.isEmpty {
+                    let changeRequest = authResult.user.createProfileChangeRequest()
+                    changeRequest.displayName = displayName
+                    try? await changeRequest.commitChanges()
+                }
+            }
+
+            return authResult.user.uid
+        } catch {
+            throw AuthError.from(error)
+        }
+    }
+
+    private func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        guard errorCode == errSecSuccess else {
+            fatalError("Unable to generate nonce: \(errorCode)")
+        }
+        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        return String(randomBytes.map { charset[Int($0) % charset.count] })
+    }
+
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        return hashedData.compactMap { String(format: "%02x", $0) }.joined()
     }
 
     func signOut() throws {

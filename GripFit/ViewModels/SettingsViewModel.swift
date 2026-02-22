@@ -9,6 +9,7 @@ final class SettingsViewModel {
     var email: String = ""
     var preferredUnit: ForceUnit = .kilograms
     var dominantHand: Hand = .right
+    var readinessTimeframe: ReadinessTimeframe = .oneWeek
     var showSignOutConfirmation: Bool = false
     var isLoading: Bool = false
     var errorMessage: String?
@@ -27,33 +28,42 @@ final class SettingsViewModel {
 
     // MARK: - Load Profile
 
+    private var hasLoadedOnce = false
+
     func loadProfile(userId: String, displayName: String?, email: String?) async {
         self.userId = userId
-        self.displayName = displayName ?? ""
-        self.email = email ?? ""
-        isLoading = true
         errorMessage = nil
 
-        // Load saved preferences from UserDefaults
-        if let unitRaw = UserDefaults.standard.string(forKey: AppConstants.UserDefaultsKeys.preferredUnit),
-           let unit = ForceUnit(rawValue: unitRaw) {
-            preferredUnit = unit
+        // Populate immediately from auth state and UserDefaults (no loading overlay)
+        if !hasLoadedOnce {
+            self.displayName = displayName ?? ""
+            self.email = email ?? ""
+
+            if let unitRaw = UserDefaults.standard.string(forKey: AppConstants.UserDefaultsKeys.preferredUnit),
+               let unit = ForceUnit(rawValue: unitRaw) {
+                preferredUnit = unit
+            }
+
+            if let handRaw = UserDefaults.standard.string(forKey: AppConstants.UserDefaultsKeys.dominantHand),
+               let hand = Hand(rawValue: handRaw) {
+                dominantHand = hand
+            }
+
+            if let tfRaw = UserDefaults.standard.string(forKey: AppConstants.UserDefaultsKeys.readinessTimeframe),
+               let tf = ReadinessTimeframe(rawValue: tfRaw) {
+                readinessTimeframe = tf
+            }
+
+            hasLoadedOnce = true
         }
 
-        if let handRaw = UserDefaults.standard.string(forKey: AppConstants.UserDefaultsKeys.dominantHand),
-           let hand = Hand(rawValue: handRaw) {
-            dominantHand = hand
-        }
-
-        // Try to fetch from Firestore
+        // Silently sync with Firestore in background (no loading overlay)
         do {
             if let profile = try await databaseService.fetchUserProfile(userId: userId) {
                 self.displayName = profile.displayName
                 self.email = profile.email
                 self.preferredUnit = profile.preferredUnit
                 self.dominantHand = profile.dominantHand
-
-                // Sync to UserDefaults
                 saveToUserDefaults()
             }
         } catch {
@@ -61,8 +71,6 @@ final class SettingsViewModel {
             showError = true
             print("Failed to fetch profile: \(error)")
         }
-
-        isLoading = false
     }
 
     // MARK: - Update Preferences
@@ -83,9 +91,15 @@ final class SettingsViewModel {
         }
     }
 
+    func updateReadinessTimeframe(_ timeframe: ReadinessTimeframe) {
+        readinessTimeframe = timeframe
+        saveToUserDefaults()
+    }
+
     private func saveToUserDefaults() {
         UserDefaults.standard.set(preferredUnit.rawValue, forKey: AppConstants.UserDefaultsKeys.preferredUnit)
         UserDefaults.standard.set(dominantHand.rawValue, forKey: AppConstants.UserDefaultsKeys.dominantHand)
+        UserDefaults.standard.set(readinessTimeframe.rawValue, forKey: AppConstants.UserDefaultsKeys.readinessTimeframe)
     }
 
     private func syncPreferencesToFirestore() async {

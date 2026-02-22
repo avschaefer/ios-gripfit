@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import AuthenticationServices
 
 struct LoginView: View {
     @Environment(AuthViewModel.self) private var authVM
@@ -8,35 +9,31 @@ struct LoginView: View {
     @State private var showRegister: Bool = false
     @State private var showForgotPassword: Bool = false
     @State private var forgotPasswordEmail: String = ""
+    @State private var appleSignInNonce: String = ""
+    @State private var appleSignInDelegate: AppleSignInDelegate?
 
     var body: some View {
         NavigationStack {
             ZStack {
                 ModernScreenBackground()
 
-                ScrollView {
-                    VStack(spacing: 28) {
-                        Spacer().frame(height: 20)
-                        headerSection
-                        formSection
-                        signInButton
-                        createAccountButton
-                        dividerSection
-                        googleSignInButton
-                        forgotPasswordLink
-                        Spacer().frame(height: 20)
-                    }
-                    .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
-                }
-                .scrollDismissesKeyboard(.interactively)
-            }
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
+                VStack(spacing: 22) {
                     Spacer()
-                    Button("Done") {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    }
+                    headerSection
+                    formSection
+                    signInButton
+                    dividerSection
+                    appleSignInButton
+                    googleSignInButton
+                    forgotPasswordLink
+                    Spacer()
+                    createAccountLink
                 }
+                .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+                .padding(.bottom, 16)
+            }
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
             .navigationDestination(isPresented: $showRegister) {
                 RegisterView()
@@ -76,24 +73,20 @@ struct LoginView: View {
             ZStack {
                 Circle()
                     .fill(.blue.opacity(0.14))
-                    .frame(width: 130, height: 130)
+                    .frame(width: 100, height: 100)
                 Circle()
                     .stroke(.blue.opacity(0.55), lineWidth: 1.5)
-                    .frame(width: 130, height: 130)
+                    .frame(width: 100, height: 100)
                 Image("AppLogo")
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 120, height: 120)
+                    .frame(width: 90, height: 90)
                     .clipShape(Circle())
                     .blendMode(.lighten)
             }
 
             Text(AppConstants.appName)
                 .font(.largeTitle.weight(.bold))
-
-            Text("Track your grip strength")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -164,10 +157,26 @@ struct LoginView: View {
         }
     }
 
+    private var appleSignInButton: some View {
+        Button {
+            signInWithApple()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "apple.logo")
+                Text("Continue with Apple")
+            }
+        }
+        .buttonStyle(ModernSecondaryButtonStyle())
+        .disabled(authVM.isLoading)
+    }
+
     private var googleSignInButton: some View {
         Button(action: signInWithGoogle) {
             HStack(spacing: 10) {
-                Image(systemName: "globe")
+                Image("GoogleLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
                 Text("Continue with Google")
             }
         }
@@ -175,16 +184,17 @@ struct LoginView: View {
         .disabled(authVM.isLoading)
     }
 
-    private var createAccountButton: some View {
-        Button {
-            showRegister = true
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "envelope")
-                Text("Sign Up with Email")
+    private var createAccountLink: some View {
+        HStack(spacing: 4) {
+            Text("Don't have an account?")
+                .foregroundStyle(.secondary)
+            Button("Sign up") {
+                showRegister = true
             }
+            .fontWeight(.semibold)
+            .foregroundStyle(.blue.opacity(0.85))
         }
-        .buttonStyle(ModernSecondaryButtonStyle())
+        .font(.subheadline)
     }
 
     private var forgotPasswordLink: some View {
@@ -202,6 +212,27 @@ struct LoginView: View {
         Task {
             await authVM.signIn(email: email, password: password)
         }
+    }
+
+    private func signInWithApple() {
+        let nonceResult = authVM.prepareAppleSignIn()
+        appleSignInNonce = nonceResult.nonce
+
+        let provider = ASAuthorizationAppleIDProvider()
+        let request = provider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = nonceResult.hashedNonce
+
+        let delegate = AppleSignInDelegate { authorization in
+            Task {
+                await authVM.signInWithApple(authorization: authorization, rawNonce: appleSignInNonce)
+            }
+        }
+        appleSignInDelegate = delegate
+
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = delegate
+        controller.performRequests()
     }
 
     private func signInWithGoogle() {
@@ -224,6 +255,22 @@ struct LoginView: View {
             .first { $0.isKeyWindow }?
             .rootViewController
     }
+}
+
+// MARK: - Apple Sign-In Delegate
+
+final class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate {
+    private let onSuccess: (ASAuthorization) -> Void
+
+    init(onSuccess: @escaping (ASAuthorization) -> Void) {
+        self.onSuccess = onSuccess
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        onSuccess(authorization)
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {}
 }
 
 #Preview {

@@ -52,6 +52,18 @@ struct LiveReadingView: View {
 
                     recordButton
 
+                    NavigationLink(destination: InstructionsView()) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "book.closed")
+                                .font(.caption)
+                            Text("How to use")
+                                .font(.caption.weight(.medium))
+                        }
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+
                     if !deviceVM.isRecording {
                         Button(role: .destructive) {
                             deviceVM.disconnect()

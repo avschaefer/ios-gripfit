@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Observation
 import FirebaseAuth
+import AuthenticationServices
 
 @Observable
 @MainActor
@@ -70,6 +71,35 @@ final class AuthViewModel {
         isLoading = false
     }
 
+    func prepareAppleSignIn() -> (nonce: String, hashedNonce: String) {
+        authService.startAppleSignIn()
+    }
+
+    func signInWithApple(authorization: ASAuthorization, rawNonce: String) async {
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let appleIDToken = appleIDCredential.identityToken,
+              let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+            showErrorMessage(AuthError.appleSignInFailed.localizedDescription)
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let userId = try await authService.signInWithApple(
+                idToken: idTokenString,
+                rawNonce: rawNonce,
+                fullName: appleIDCredential.fullName
+            )
+            try await ensureUserProfileExists(userId: userId)
+        } catch {
+            showErrorMessage(error.localizedDescription)
+        }
+
+        isLoading = false
+    }
+
     // MARK: - Register
 
     func register(email: String, password: String, confirmPassword: String, displayName: String) async {
@@ -128,9 +158,18 @@ final class AuthViewModel {
     }
 
     func updateEmail(_ newEmail: String) async -> Bool {
+        guard let providers = authService.currentUser?.providerData.map(\.providerID),
+              providers.contains("password") else {
+            showErrorMessage("Email changes are only available for email/password accounts. Your account uses a third-party sign-in provider.")
+            return false
+        }
+
         isLoading = true
         do {
             try await authService.updateEmail(newEmail)
+            if let userId = currentUserId {
+                try await databaseService.updateEmail(userId: userId, email: newEmail)
+            }
             isLoading = false
             return true
         } catch {

@@ -1,4 +1,6 @@
 import SwiftUI
+import MessageUI
+import StoreKit
 
 // MARK: - Legal Placeholder Views
 
@@ -124,6 +126,11 @@ struct SettingsView: View {
     @State private var editName = ""
     @State private var editEmail = ""
     @State private var showEmailVerificationSent = false
+    @State private var showFeedbackSheet = false
+    @State private var feedbackMessage = ""
+    @State private var showFeedbackSentAlert = false
+    @State private var showMailUnavailableAlert = false
+    @State private var showSubscription = false
 
     var body: some View {
         NavigationStack {
@@ -134,7 +141,9 @@ struct SettingsView: View {
                     VStack(spacing: AppConstants.UI.sectionSpacing) {
                         header
                         profileSection
+                        instructionsSection
                         preferencesSection
+                        actionsSection
                         aboutSection
                         signOutSection
                     }
@@ -152,17 +161,6 @@ struct SettingsView: View {
                     displayName: authVM.currentUserDisplayName,
                     email: authVM.currentUserEmail
                 )
-            }
-            .overlay {
-                if settingsVM.isLoading {
-                    ZStack {
-                        Color.black.opacity(0.3)
-                            .ignoresSafeArea()
-                        ProgressView("Loading profile...")
-                            .padding(24)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                }
             }
             .sheet(isPresented: $showEditProfile) {
                 editProfileSheet
@@ -188,6 +186,22 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(settingsVM.errorMessage ?? AppConstants.ErrorMessages.genericError)
+            }
+            .sheet(isPresented: $showFeedbackSheet) {
+                feedbackSheet
+            }
+            .sheet(isPresented: $showSubscription) {
+                subscriptionView
+            }
+            .alert("Feedback Sent", isPresented: $showFeedbackSentAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Thank you for your feedback!")
+            }
+            .alert("Email Unavailable", isPresented: $showMailUnavailableAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Please email us directly at support@gripfit.app")
             }
         }
     }
@@ -246,13 +260,8 @@ struct SettingsView: View {
                     .font(.headline)
 
                 HStack(alignment: .top, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Units")
-                            .font(.subheadline.weight(.semibold))
-                        Text("Choose your measurement system")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text("Units")
+                        .font(.subheadline.weight(.semibold))
                     Spacer(minLength: 10)
                     Picker("Unit", selection: Binding(
                         get: { settingsVM.preferredUnit },
@@ -288,6 +297,85 @@ struct SettingsView: View {
                     .frame(width: 130)
                     .disabled(settingsVM.isLoading)
                 }
+
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Readiness Window")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Time frame for readiness score")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 10)
+                    Picker("Readiness", selection: Binding(
+                        get: { settingsVM.readinessTimeframe },
+                        set: { settingsVM.updateReadinessTimeframe($0) }
+                    )) {
+                        ForEach(ReadinessTimeframe.allCases, id: \.self) { tf in
+                            Text(tf.displayName).tag(tf)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(.white)
+                }
+            }
+        }
+    }
+
+    // MARK: - Instructions Card
+
+    private var instructionsSection: some View {
+        NavigationLink(destination: InstructionsView()) {
+            ModernCard {
+                HStack(spacing: 12) {
+                    Image(systemName: "book.closed")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Getting Started")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Pairing, usage & data tips")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Actions (Refer, Subscription, Feedback)
+
+    private var actionsSection: some View {
+        ModernCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Actions")
+                    .font(.headline)
+
+                Button {
+                    shareApp()
+                } label: {
+                    aboutRow(icon: "person.2", title: "Refer a Friend")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showSubscription = true
+                } label: {
+                    aboutRow(icon: "crown", title: "Subscription")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showFeedbackSheet = true
+                } label: {
+                    aboutRow(icon: "envelope", title: "Send Feedback")
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -487,6 +575,228 @@ struct SettingsView: View {
             }
         } message: {
             Text("Check \(editEmail) for a verification link. Your email will update once confirmed.")
+        }
+    }
+
+    // MARK: - Feedback Sheet
+
+    private var feedbackSheet: some View {
+        NavigationStack {
+            ZStack {
+                ModernScreenBackground()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("We'd love to hear from you. Share your thoughts, report a bug, or suggest a feature.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+
+                        ZStack(alignment: .topLeading) {
+                            if feedbackMessage.isEmpty {
+                                Text("Your message...")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.tertiary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                            }
+                            TextEditor(text: $feedbackMessage)
+                                .scrollContentBackground(.hidden)
+                                .font(.subheadline)
+                                .frame(minHeight: 150)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                                .fill(.white.opacity(0.07))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppConstants.UI.compactCardCornerRadius, style: .continuous)
+                                .stroke(.white.opacity(0.14), lineWidth: 1)
+                        )
+
+                        Button {
+                            sendFeedback()
+                        } label: {
+                            Text("Send Feedback")
+                        }
+                        .buttonStyle(ModernPrimaryButtonStyle())
+                        .disabled(feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+                    .padding(.top, 20)
+                    .padding(.bottom, 24)
+                }
+            }
+            .navigationTitle("Send Feedback")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        showFeedbackSheet = false
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func sendFeedback() {
+        let subject = "GripFit Feedback"
+        let body = feedbackMessage
+        let email = "support@gripfit.app"
+        let encoded = "mailto:\(email)?subject=\(subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&body=\(body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+
+        if let url = URL(string: encoded), UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+            feedbackMessage = ""
+            showFeedbackSheet = false
+            showFeedbackSentAlert = true
+        } else {
+            showFeedbackSheet = false
+            showMailUnavailableAlert = true
+        }
+    }
+
+    // MARK: - Subscription View
+
+    private var subscriptionView: some View {
+        NavigationStack {
+            ZStack {
+                ModernScreenBackground()
+
+                VStack(spacing: 24) {
+                    Spacer()
+
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: 56))
+                        .foregroundStyle(.yellow)
+
+                    Text("GripFit Pro")
+                        .font(.title.weight(.bold))
+
+                    Text("Unlock advanced analytics, unlimited history, and more.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+
+                    Button {
+                        // Subscription managed via Apple StoreKit
+                    } label: {
+                        Text("View Plans")
+                    }
+                    .buttonStyle(ModernPrimaryButtonStyle())
+                    .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+
+                    Button("Restore Purchases") {
+                        // StoreKit restore
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.blue.opacity(0.85))
+
+                    Spacer()
+                }
+            }
+            .navigationTitle("Subscription")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        showSubscription = false
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .presentationDetents([.large])
+    }
+
+    // MARK: - Share / Refer
+
+    private func shareApp() {
+        let message = "Check out GripFit — track your grip strength! https://apps.apple.com/app/gripfit"
+        let activityVC = UIActivityViewController(activityItems: [message], applicationActivities: nil)
+
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let root = scene.windows.first?.rootViewController else { return }
+
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = root.view
+            popover.sourceRect = CGRect(x: root.view.bounds.midX, y: root.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+
+        root.present(activityVC, animated: true)
+    }
+}
+
+// MARK: - Instructions View
+
+struct InstructionsView: View {
+    var body: some View {
+        ZStack {
+            ModernScreenBackground()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("Getting Started")
+                        .font(.title.weight(.bold))
+
+                    instructionCard(
+                        step: "1",
+                        icon: "antenna.radiowaves.left.and.right",
+                        title: "Pair Your Device",
+                        body: "Go to the Device tab, tap Scan, and select your GripFit sensor from the list. Make sure Bluetooth is enabled."
+                    )
+
+                    instructionCard(
+                        step: "2",
+                        icon: "hand.raised",
+                        title: "Run a Test",
+                        body: "Select your hand, tap Start Test, and squeeze as hard as you can. Hold for a few seconds, then release."
+                    )
+
+                    instructionCard(
+                        step: "3",
+                        icon: "chart.line.uptrend.xyaxis",
+                        title: "Read Your Data",
+                        body: "Your dashboard shows daily bests, averages, and trends over time. The Readiness score reflects your recent performance consistency relative to your peak."
+                    )
+                }
+                .padding(.horizontal, AppConstants.UI.screenHorizontalPadding)
+                .padding(.top, 10)
+                .padding(.bottom, 24)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("")
+        .toolbarBackground(.hidden, for: .navigationBar)
+    }
+
+    private func instructionCard(step: String, icon: String, title: String, body: String) -> some View {
+        ModernCard {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(.blue.opacity(0.14))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.blue)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Step \(step): \(title)")
+                        .font(.subheadline.weight(.semibold))
+                    Text(body)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
     }
 }

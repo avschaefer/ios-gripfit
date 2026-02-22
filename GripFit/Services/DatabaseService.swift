@@ -167,6 +167,15 @@ final class DatabaseService {
         }
     }
 
+    func updateEmail(userId: String, email: String) async throws {
+        guard !userId.isEmpty else { return }
+        do {
+            try await db.collection("users").document(userId).updateData(["email": email])
+        } catch {
+            throw DatabaseError.unknown("Failed to update email: \(error.localizedDescription)")
+        }
+    }
+
     func updateDisplayName(userId: String, name: String) async throws {
         guard !userId.isEmpty else { return }
         do {
