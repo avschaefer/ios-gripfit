@@ -5,22 +5,21 @@ import FirebaseCore
 @main
 struct GripFitApp: App {
     @State private var authVM: AuthViewModel
+
+    #if targetEnvironment(simulator)
     @State private var deviceManager: MockBLEManager
+    #else
+    @State private var deviceManager: BLEManager
+    #endif
 
     init() {
         FirebaseApp.configure()
         _authVM = State(initialValue: AuthViewModel())
 
-        // Use MockBLEManager for simulator, BLEManager for real device
         #if targetEnvironment(simulator)
-        let mock = MockBLEManager()
-        _deviceManager = State(initialValue: mock)
+        _deviceManager = State(initialValue: MockBLEManager())
         #else
-        // On real device, we still initialize MockBLEManager here as the default.
-        // Replace with BLEManager() when ready for real BLE:
-        // let manager = BLEManager()
-        let mock = MockBLEManager()
-        _deviceManager = State(initialValue: mock)
+        _deviceManager = State(initialValue: BLEManager())
         #endif
     }
 

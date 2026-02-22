@@ -33,6 +33,7 @@
 		AA000024 /* BLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000024 /* BLEManager.swift */; };
 		AA000025 /* MockBLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000025 /* MockBLEManager.swift */; };
 		AA000026 /* BLEConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000026 /* BLEConstants.swift */; };
+		AA000037 /* BLEMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000037 /* BLEMessageParser.swift */; };
 		AA000027 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000027 /* AuthService.swift */; };
 		AA000028 /* DatabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000028 /* DatabaseService.swift */; };
 		AA000029 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000029 /* Constants.swift */; };
@@ -73,6 +74,7 @@
 		AB000024 /* BLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEManager.swift; sourceTree = "<group>"; };
 		AB000025 /* MockBLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBLEManager.swift; sourceTree = "<group>"; };
 		AB000026 /* BLEConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConstants.swift; sourceTree = "<group>"; };
+		AB000037 /* BLEMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEMessageParser.swift; sourceTree = "<group>"; };
 		AB000027 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		AB000028 /* DatabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseService.swift; sourceTree = "<group>"; };
 		AB000029 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
@@ -240,6 +242,7 @@
 				AB000024 /* BLEManager.swift */,
 				AB000025 /* MockBLEManager.swift */,
 				AB000026 /* BLEConstants.swift */,
+				AB000037 /* BLEMessageParser.swift */,
 			);
 			path = BLE;
 			sourceTree = "<group>";
@@ -357,6 +360,7 @@
 				AA000024 /* BLEManager.swift in Sources */,
 				AA000025 /* MockBLEManager.swift in Sources */,
 				AA000026 /* BLEConstants.swift in Sources */,
+				AA000037 /* BLEMessageParser.swift in Sources */,
 				AA000027 /* AuthService.swift in Sources */,
 				AA000028 /* DatabaseService.swift in Sources */,
 				AA000029 /* Constants.swift in Sources */,

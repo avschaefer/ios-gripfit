@@ -15,6 +15,18 @@ struct LiveReadingView: View {
                 VStack(alignment: .leading, spacing: AppConstants.UI.sectionSpacing) {
                     header
 
+                    if !deviceVM.sensorReady && deviceVM.connectionState.isConnected {
+                        ModernCard {
+                            HStack(spacing: 10) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(.orange)
+                                Text("Sensor not ready — check device hardware")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+
                     ModernCard {
                         VStack(alignment: .leading, spacing: 14) {
                             HStack(alignment: .top) {
@@ -50,6 +62,7 @@ struct LiveReadingView: View {
                         }
                     }
 
+                    tareButton
                     recordButton
 
                     NavigationLink(destination: InstructionsView()) {
@@ -99,9 +112,15 @@ struct LiveReadingView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Grip Test")
                     .font(.title.weight(.bold))
-                Text("Grip strength insights")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if let fw = deviceVM.firmwareVersion {
+                    Text("Firmware v\(fw)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Grip strength insights")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             ModernPillBadge(
@@ -170,6 +189,24 @@ struct LiveReadingView: View {
     private var peakText: String {
         guard let peak = deviceVM.lastRecording?.peakForce else { return "0" }
         return String(format: "%.0f", unit.convert(peak))
+    }
+
+    private var tareButton: some View {
+        Button {
+            deviceVM.sendTare()
+        } label: {
+            HStack {
+                Image(systemName: "arrow.counterclockwise")
+                Text("Tare (Zero)")
+            }
+            .font(.subheadline.weight(.medium))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(deviceVM.isRecording)
+
     }
 
     private var recordButton: some View {

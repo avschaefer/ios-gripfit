@@ -8,6 +8,8 @@ final class MockBLEManager: GripDeviceProtocol {
     var discoveredDevices: [DiscoveredDevice] = []
     var currentForce: Double = 0.0
     var isRecording: Bool = false
+    var firmwareVersion: String? = nil
+    var sensorReady: Bool = true
 
     private var forceTimer: Timer?
     private var scanTimer: Timer?
@@ -16,7 +18,6 @@ final class MockBLEManager: GripDeviceProtocol {
     private var elapsedTime: TimeInterval = 0.0
     private var currentUserId: String = ""
 
-    // Simulation state
     private var simulationPhase: SimulationPhase = .idle
     private var phaseStartTime: TimeInterval = 0.0
     private var targetPeak: Double = 0.0
@@ -30,20 +31,21 @@ final class MockBLEManager: GripDeviceProtocol {
     }
 
     private let mockDevices: [DiscoveredDevice] = [
-        DiscoveredDevice(id: UUID(), name: "GripPro-A1B2", rssi: -45),
-        DiscoveredDevice(id: UUID(), name: "DynaGrip-3C4D", rssi: -62),
-        DiscoveredDevice(id: UUID(), name: "ForceMax-E5F6", rssi: -78)
+        DiscoveredDevice(id: UUID(), name: "_GRIPFIT", rssi: -45),
+        DiscoveredDevice(id: UUID(), name: "GripPro-A1B2", rssi: -62),
+        DiscoveredDevice(id: UUID(), name: "DynaGrip-3C4D", rssi: -78)
     ]
+
+    // MARK: - Scanning
 
     func startScanning() {
         guard connectionState == .disconnected else { return }
         connectionState = .scanning
         discoveredDevices = []
 
-        // Simulate discovery delay
         scanTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
             Task { @MainActor in
-                guard let self = self, self.connectionState == .scanning else { return }
+                guard let self, self.connectionState == .scanning else { return }
                 self.discoveredDevices = self.mockDevices
             }
         }
@@ -57,15 +59,18 @@ final class MockBLEManager: GripDeviceProtocol {
         }
     }
 
+    // MARK: - Connection
+
     func connect(to device: DiscoveredDevice) {
         stopScanning()
         connectionState = .connecting
 
-        // Simulate connection delay
         Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
             Task { @MainActor in
-                guard let self = self else { return }
+                guard let self else { return }
                 self.connectionState = .connected(deviceName: device.name)
+                self.firmwareVersion = "1.0"
+                self.sensorReady = true
                 self.startForceSimulation()
             }
         }
@@ -79,7 +84,28 @@ final class MockBLEManager: GripDeviceProtocol {
         connectionState = .disconnected
         discoveredDevices = []
         currentForce = 0.0
+        firmwareVersion = nil
+        sensorReady = true
     }
+
+    // MARK: - Commands
+
+    func sendTare() {
+        guard connectionState.isConnected else { return }
+        print("[MockBLE] Tare command sent")
+    }
+
+    func sendPing() {
+        guard connectionState.isConnected else { return }
+        print("[MockBLE] Ping → Pong")
+    }
+
+    func setSampleRate(ms: Int) {
+        guard connectionState.isConnected else { return }
+        print("[MockBLE] Sample rate set to \(ms)ms")
+    }
+
+    // MARK: - Recording
 
     func startRecording() {
         guard connectionState.isConnected else { return }
@@ -112,7 +138,6 @@ final class MockBLEManager: GripDeviceProtocol {
 
         recordedDataPoints = []
         recordingStartTime = nil
-
         return recording
     }
 
@@ -128,7 +153,6 @@ final class MockBLEManager: GripDeviceProtocol {
         targetPeak = Double.random(in: 25...55)
         phaseStartTime = 0.0
 
-        // Start a new grip cycle after a short delay
         Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 self?.simulationPhase = .rampUp
@@ -197,7 +221,6 @@ final class MockBLEManager: GripDeviceProtocol {
 
         currentForce = max(0, currentForce)
 
-        // Record data point if recording
         if isRecording, let startTime = recordingStartTime {
             let relativeTime = Date().timeIntervalSince(startTime)
             let dataPoint = ForceDataPoint(relativeTime: relativeTime, force: currentForce)
@@ -205,4 +228,3 @@ final class MockBLEManager: GripDeviceProtocol {
         }
     }
 }
-

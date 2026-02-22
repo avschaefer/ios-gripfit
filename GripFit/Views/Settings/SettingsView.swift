@@ -142,6 +142,7 @@ struct SettingsView: View {
                         header
                         profileSection
                         instructionsSection
+                        readinessInfoSection
                         preferencesSection
                         actionsSection
                         aboutSection
@@ -348,6 +349,30 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
 
+    private var readinessInfoSection: some View {
+        NavigationLink(destination: ReadinessAboutView()) {
+            ModernCard {
+                HStack(spacing: 12) {
+                    Image(systemName: "heart.text.square")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Grip & Readiness")
+                            .font(.subheadline.weight(.semibold))
+                        Text("How grip strength impacts readiness")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - Actions (Refer, Subscription, Feedback)
 
     private var actionsSection: some View {
@@ -385,11 +410,6 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("About")
                     .font(.headline)
-
-                NavigationLink(destination: ReadinessAboutView()) {
-                    aboutRow(icon: "heart.text.square", title: "Grip & Readiness")
-                }
-                .buttonStyle(.plain)
 
                 NavigationLink(destination: PrivacyPolicyView()) {
                     aboutRow(icon: "shield", title: "Privacy")
@@ -442,7 +462,7 @@ struct SettingsView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
             Spacer()
-            Text("\(settingsVM.appVersion) (\(settingsVM.buildNumber))")
+            Text(settingsVM.fullVersion)
                 .font(.subheadline.weight(.semibold))
         }
         .padding(12)
@@ -799,24 +819,25 @@ struct ReadinessAboutView: View {
 
     private func topicCard(icon: String, title: String, body: String) -> some View {
         ModernCard {
-            HStack(alignment: .top, spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(.blue.opacity(0.14))
-                        .frame(width: 40, height: 40)
-                    Image(systemName: icon)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.blue)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(.blue.opacity(0.14))
+                            .frame(width: 36, height: 36)
+                        Image(systemName: icon)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.blue)
+                    }
                     Text(title)
-                        .font(.subheadline.weight(.semibold))
-                    Text(body)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.body.weight(.semibold))
                 }
+                Text(body)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

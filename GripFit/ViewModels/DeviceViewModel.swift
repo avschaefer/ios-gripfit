@@ -15,6 +15,9 @@ final class DeviceViewModel {
     var errorMessage: String?
     var showError: Bool = false
 
+    var firmwareVersion: String?
+    var sensorReady: Bool = true
+
     private let deviceManager: GripDeviceProtocol
     private let databaseService = DatabaseService.shared
     private var userId: String = ""
@@ -31,15 +34,13 @@ final class DeviceViewModel {
         discoveredDevices = deviceManager.discoveredDevices
         currentForce = deviceManager.currentForce
         isRecording = deviceManager.isRecording
+        firmwareVersion = deviceManager.firmwareVersion
+        sensorReady = deviceManager.sensorReady
     }
 
     func setUserId(_ id: String) {
         userId = id
-        if let mock = deviceManager as? MockBLEManager {
-            mock.setUserId(id)
-        } else if let ble = deviceManager as? BLEManager {
-            ble.setUserId(id)
-        }
+        deviceManager.setUserId(id)
     }
 
     // MARK: - Scanning
@@ -63,8 +64,23 @@ final class DeviceViewModel {
 
     func disconnect() {
         stopRecordingTimer()
+        stopStateSync()
         deviceManager.disconnect()
         syncState()
+    }
+
+    // MARK: - Commands
+
+    func sendTare() {
+        deviceManager.sendTare()
+    }
+
+    func sendPing() {
+        deviceManager.sendPing()
+    }
+
+    func setSampleRate(ms: Int) {
+        deviceManager.setSampleRate(ms: ms)
     }
 
     // MARK: - Recording
@@ -80,7 +96,6 @@ final class DeviceViewModel {
         stopRecordingTimer()
 
         if let recording = deviceManager.stopRecording() {
-            // Update hand selection
             let finalRecording = GripRecording(
                 id: recording.id,
                 userId: userId,
@@ -120,6 +135,13 @@ final class DeviceViewModel {
         }
     }
 
+    func resumeStateSyncIfNeeded() {
+        guard stateSyncTimer == nil,
+              connectionState.isConnected || connectionState.isScanning || connectionState == .connecting
+        else { return }
+        startStateSync()
+    }
+
     func stopStateSync() {
         stateSyncTimer?.invalidate()
         stateSyncTimer = nil
@@ -138,4 +160,3 @@ final class DeviceViewModel {
         recordingTimer = nil
     }
 }
-

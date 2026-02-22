@@ -51,8 +51,10 @@ struct DiscoveredDevice: Identifiable, Equatable {
 protocol GripDeviceProtocol: AnyObject {
     var connectionState: ConnectionState { get }
     var discoveredDevices: [DiscoveredDevice] { get }
-    var currentForce: Double { get }           // Current force in kg
+    var currentForce: Double { get }
     var isRecording: Bool { get }
+    var firmwareVersion: String? { get }
+    var sensorReady: Bool { get }
 
     func startScanning()
     func stopScanning()
@@ -60,5 +62,9 @@ protocol GripDeviceProtocol: AnyObject {
     func disconnect()
     func startRecording()
     func stopRecording() -> GripRecording?
-}
+    func setUserId(_ userId: String)
 
+    func sendTare()
+    func sendPing()
+    func setSampleRate(ms: Int)
+}

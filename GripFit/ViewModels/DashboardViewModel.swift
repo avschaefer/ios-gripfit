@@ -223,7 +223,11 @@ final class DashboardViewModel {
     }
 
     var recentRecordings: [GripRecording] {
-        Array(filteredRecordings.sorted { $0.timestamp > $1.timestamp }.prefix(5))
+        Array(filteredRecordings.sorted { $0.timestamp > $1.timestamp }.prefix(4))
+    }
+
+    var hasMoreRecordings: Bool {
+        filteredRecordings.count > 4
     }
 
     // MARK: - Data Loading

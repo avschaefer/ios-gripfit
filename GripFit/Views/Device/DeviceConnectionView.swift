@@ -22,6 +22,9 @@ struct DeviceConnectionView: View {
                     deviceVM.setUserId(userId)
                 }
             }
+            .onAppear {
+                deviceVM.resumeStateSyncIfNeeded()
+            }
             .onDisappear {
                 deviceVM.stopStateSync()
             }

@@ -19,11 +19,15 @@ final class SettingsViewModel {
     private var userId: String = ""
 
     var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.1"
     }
 
     var buildNumber: String {
         Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
+    var fullVersion: String {
+        appVersion
     }
 
     // MARK: - Load Profile

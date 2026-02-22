@@ -466,18 +466,20 @@ struct DashboardView: View {
                     Text("Recent Sessions")
                         .font(.headline)
                     Spacer()
-                    Button {
-                        showAllSessions = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text("View all")
-                                .font(.caption.weight(.medium))
-                            Image(systemName: "chevron.right")
-                                .font(.caption2)
+                    if dashboardVM.hasMoreRecordings {
+                        Button {
+                            showAllSessions = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("View all")
+                                    .font(.caption.weight(.medium))
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                            }
+                            .foregroundStyle(.secondary)
                         }
-                        .foregroundStyle(.secondary)
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
                 .padding(.bottom, 14)
 
